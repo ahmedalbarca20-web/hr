@@ -7,9 +7,24 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors();
   app.useGlobalFilters(new AllExceptionsFilter());
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Server running on http://localhost:${port}`);
-  console.log(`🚀 Access from network: http://192.168.100.193:${port}`);
+
+  if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.PORT ?? 3000;
+    await app.listen(port, '0.0.0.0');
+    console.log(`🚀 Server running locally on http://localhost:${port}`);
+  }
+
+  await app.init();
+  return app.getHttpAdapter().getInstance();
 }
-bootstrap();
+
+// لكي يعمل على Vercel
+export const handler = async (req: any, res: any) => {
+  const instance = await bootstrap();
+  instance(req, res);
+};
+
+if (process.env.NODE_ENV !== 'production') {
+  bootstrap();
+}
+
