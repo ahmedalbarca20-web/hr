@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الإعدادات - HR Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .settings-container {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 24px;
+    }
+
+    .settings-nav {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      height: fit-content;
+    }
+
+    .settings-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
+    }
+
+    .settings-nav-item:hover {
+      background: var(--body-bg);
+    }
+
+    .settings-nav-item.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .settings-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      display: none;
+    }
+
+    .settings-panel.active {
+      display: block;
+    }
+
+    .settings-panel h2 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+
+    .settings-panel p {
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .setting-group {
+      border-bottom: 1px solid var(--border-color);
+      padding: 20px 0;
+    }
+
+    .setting-group:last-child {
+      border-bottom: none;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .setting-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .setting-info h4 {
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .setting-info span {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 28px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked+.toggle-slider {
+      background-color: var(--primary);
+    }
+
+    input:checked+.toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    .color-picker {
+      display: flex;
+      gap: 8px;
+    }
+
+    .color-option {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .color-option:hover,
+    .color-option.active {
+      border-color: var(--text-primary);
+      transform: scale(1.1);
+    }
+
+    .time-input {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .time-input input {
+      width: 80px;
+      padding: 8px 12px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-family: inherit;
+      text-align: center;
+    }
+
+    .save-btn-container {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      .settings-container {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 8px;
+      }
+
+      .settings-nav-item {
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="header">
+      <div class="header-right">
+        <h1>الإعدادات</h1>
+        <p>إعدادات النظام والتخصيص</p>
+      </div>
+    </header>
+
+    <div class="settings-container">
+      <nav class="settings-nav">
+        <div class="settings-nav-item active" onclick="showPanel('general')">
+          <span><i class="fa-solid fa-gear"></i></span> إعدادات عامة
+        </div>
+        <div class="settings-nav-item" onclick="showPanel('company')">
+          <span><i class="fa-solid fa-building"></i></span> بيانات الشركة
+        </div>
+        <div class="settings-nav-item" onclick="showPanel('attendance')">
+          <span><i class="fa-solid fa-clock"></i></span> الحضور والانصراف
+        </div>
+        <div class="settings-nav-item" onclick="showPanel('notifications')">
+          <span><i class="fa-solid fa-bell"></i></span> الإشعارات
+        </div>
+        <div class="settings-nav-item" onclick="showPanel('security')">
+          <span><i class="fa-solid fa-lock"></i></span> الأمان
+        </div>
+      </nav>
+
+      <!-- General Settings -->
+      <div class="settings-panel active" id="panel-general">
+        <h2>إعدادات عامة</h2>
+        <p>تخصيص الإعدادات العامة للنظام</p>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>اللغة</h4>
+              <span>اختر لغة واجهة النظام</span>
+            </div>
+            <select class="filter-select" id="language">
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>المنطقة الزمنية</h4>
+              <span>تحديد المنطقة الزمنية للنظام</span>
+            </div>
+            <select class="filter-select" id="timezone">
+              <option value="Asia/Baghdad">توقيت بغداد (GMT+3)</option>
+              <option value="Asia/Riyadh">توقيت الرياض (GMT+3)</option>
+              <option value="Asia/Dubai">توقيت دبي (GMT+4)</option>
+              <option value="Africa/Cairo">توقيت القاهرة (GMT+2)</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>تنسيق التاريخ</h4>
+              <span>اختر تنسيق عرض التاريخ</span>
+            </div>
+            <select class="filter-select" id="dateFormat">
+              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>العملة</h4>
+              <span>اختر عملة النظام</span>
+            </div>
+            <select class="filter-select" id="currency">
+              <option value="IQD">دينار عراقي (IQD)</option>
+              <option value="USD">دولار أمريكي (USD)</option>
+              <option value="SAR">ريال سعودي (SAR)</option>
+              <option value="AED">درهم إماراتي (AED)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>الوضع الداكن</h4>
+              <span>تفعيل الوضع الداكن للواجهة</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="darkMode">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>اللون الرئيسي</h4>
+              <span>اختر اللون الرئيسي للواجهة</span>
+            </div>
+            <div class="color-picker">
+              <div class="color-option active" style="background: #0ea5e9" data-color="#0ea5e9"></div>
+              <div class="color-option" style="background: #8b5cf6" data-color="#8b5cf6"></div>
+              <div class="color-option" style="background: #06b6d4" data-color="#06b6d4"></div>
+              <div class="color-option" style="background: #10b981" data-color="#10b981"></div>
+              <div class="color-option" style="background: #f59e0b" data-color="#f59e0b"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="save-btn-container">
+          <button class="btn btn-primary" onclick="saveSettings('general')">حفظ التغييرات</button>
+        </div>
+      </div>
+
+      <!-- Company Settings -->
+      <div class="settings-panel" id="panel-company">
+        <h2>بيانات الشركة</h2>
+        <p>إعدادات بيانات الشركة الأساسية</p>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>اسم الشركة</label>
+            <input type="text" id="companyName" placeholder="اسم الشركة">
+          </div>
+          <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="companyEmail" placeholder="info@company.com">
+          </div>
+          <div class="form-group">
+            <label>رقم الهاتف</label>
+            <input type="tel" id="companyPhone" placeholder="+966 50 000 0000">
+          </div>
+          <div class="form-group">
+            <label>السجل التجاري</label>
+            <input type="text" id="commercialRegister" placeholder="رقم السجل التجاري">
+          </div>
+          <div class="form-group full-width">
+            <label>العنوان</label>
+            <textarea id="companyAddress" placeholder="عنوان الشركة الكامل"></textarea>
+          </div>
+        </div>
+
+        <div class="save-btn-container">
+          <button class="btn btn-primary" onclick="saveSettings('company')">حفظ التغييرات</button>
+        </div>
+      </div>
+
+      <!-- Attendance Settings -->
+      <div class="settings-panel" id="panel-attendance">
+        <h2>إعدادات الحضور والانصراف</h2>
+        <p>تخصيص أوقات وقواعد الحضور</p>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>وقت بداية الدوام</h4>
+              <span>الوقت الرسمي لبداية العمل</span>
+            </div>
+            <input type="time" class="filter-select" id="workStartTime" value="08:00">
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>وقت نهاية الدوام</h4>
+              <span>الوقت الرسمي لنهاية العمل</span>
+            </div>
+            <input type="time" class="filter-select" id="workEndTime" value="17:00">
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>فترة السماح للتأخير</h4>
+              <span>الدقائق المسموح بالتأخير فيها</span>
+            </div>
+            <div class="time-input">
+              <input type="number" id="lateGrace" value="15" min="0" max="60">
+              <span>دقيقة</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>احتساب الغياب تلقائياً</h4>
+              <span>احتساب الموظفين غير المسجلين كغائبين</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoAbsent" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>مزامنة تلقائية مع الأجهزة</h4>
+              <span>مزامنة البيانات من أجهزة البصمة تلقائياً</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoSync" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="save-btn-container">
+          <button class="btn btn-primary" onclick="saveSettings('attendance')">حفظ التغييرات</button>
+        </div>
+      </div>
+
+      <!-- Notifications Settings -->
+      <div class="settings-panel" id="panel-notifications">
+        <h2>إعدادات الإشعارات</h2>
+        <p>تخصيص إشعارات النظام</p>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>إشعارات البريد الإلكتروني</h4>
+              <span>استلام إشعارات عبر البريد</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="emailNotifications" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>إشعارات طلبات الإجازة</h4>
+              <span>إشعار عند تقديم طلب إجازة جديد</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="leaveNotifications" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>إشعارات التأخير</h4>
+              <span>إشعار عند تأخر موظف</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="lateNotifications">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>تقارير يومية</h4>
+              <span>إرسال ملخص يومي للحضور</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="dailyReport">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="save-btn-container">
+          <button class="btn btn-primary" onclick="saveSettings('notifications')">حفظ التغييرات</button>
+        </div>
+      </div>
+
+      <!-- Security Settings -->
+      <div class="settings-panel" id="panel-security">
+        <h2>إعدادات الأمان</h2>
+        <p>إعدادات الأمان وحماية الحساب</p>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>المصادقة الثنائية</h4>
+              <span>تفعيل طبقة أمان إضافية</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="twoFactor">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <h4>تسجيل الخروج التلقائي</h4>
+              <span>تسجيل الخروج بعد فترة من عدم النشاط</span>
+            </div>
+            <select class="filter-select" id="autoLogout">
+              <option value="30">30 دقيقة</option>
+              <option value="60">ساعة واحدة</option>
+              <option value="120">ساعتان</option>
+              <option value="0">معطل</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h4 style="margin-bottom: 16px;">تغيير كلمة المرور</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>كلمة المرور الحالية</label>
+              <input type="password" id="currentPassword">
+            </div>
+            <div class="form-group">
+              <label>كلمة المرور الجديدة</label>
+              <input type="password" id="newPassword">
+            </div>
+            <div class="form-group full-width">
+              <label>تأكيد كلمة المرور</label>
+              <input type="password" id="confirmPassword">
+            </div>
+          </div>
+        </div>
+
+        <div class="save-btn-container">
+          <button class="btn btn-secondary" onclick="changePassword()" style="margin-left: 12px;">تغيير كلمة
+            المرور</button>
+          <button class="btn btn-primary" onclick="saveSettings('security')">حفظ التغييرات</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script>
+    // Show panel
+    function showPanel(panelId) {
+      // Update nav
+      document.querySelectorAll('.settings-nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+
+      // Update panels
+      document.querySelectorAll('.settings-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.getElementById(`panel-${panelId}`).classList.add('active');
+    }
+
+    // Color picker
+    document.querySelectorAll('.color-option').forEach(option => {
+      option.addEventListener('click', function () {
+        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Load settings from localStorage
+    function loadSettings() {
+      const settings = JSON.parse(localStorage.getItem('hr_settings') || '{}');
+
+      // General
+      if (settings.language) document.getElementById('language').value = settings.language;
+      if (settings.timezone) document.getElementById('timezone').value = settings.timezone;
+      if (settings.dateFormat) document.getElementById('dateFormat').value = settings.dateFormat;
+      if (settings.currency) document.getElementById('currency').value = settings.currency;
+      if (settings.darkMode) document.getElementById('darkMode').checked = settings.darkMode;
+
+      // Restore primary color selection
+      if (settings.primaryColor) {
+        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+        const match = document.querySelector(`.color-option[data-color="${settings.primaryColor}"]`);
+        if (match) match.classList.add('active');
+      }
+
+      // Company
+      if (settings.companyName) document.getElementById('companyName').value = settings.companyName;
+      if (settings.companyEmail) document.getElementById('companyEmail').value = settings.companyEmail;
+      if (settings.companyPhone) document.getElementById('companyPhone').value = settings.companyPhone;
+      if (settings.commercialRegister) document.getElementById('commercialRegister').value = settings.commercialRegister;
+      if (settings.companyAddress) document.getElementById('companyAddress').value = settings.companyAddress;
+
+      // Attendance
+      if (settings.workStartTime) document.getElementById('workStartTime').value = settings.workStartTime;
+      if (settings.workEndTime) document.getElementById('workEndTime').value = settings.workEndTime;
+      if (settings.lateGrace) document.getElementById('lateGrace').value = settings.lateGrace;
+      if (settings.autoAbsent !== undefined) document.getElementById('autoAbsent').checked = settings.autoAbsent;
+      if (settings.autoSync !== undefined) document.getElementById('autoSync').checked = settings.autoSync;
+
+      // Notifications
+      if (settings.emailNotifications !== undefined) document.getElementById('emailNotifications').checked = settings.emailNotifications;
+      if (settings.leaveNotifications !== undefined) document.getElementById('leaveNotifications').checked = settings.leaveNotifications;
+      if (settings.lateNotifications !== undefined) document.getElementById('lateNotifications').checked = settings.lateNotifications;
+      if (settings.dailyReport !== undefined) document.getElementById('dailyReport').checked = settings.dailyReport;
+
+      // Security
+      if (settings.twoFactor !== undefined) document.getElementById('twoFactor').checked = settings.twoFactor;
+      if (settings.autoLogout) document.getElementById('autoLogout').value = settings.autoLogout;
+
+      // Apply visual settings
+      applySettings(settings);
+    }
+
+    // Apply visual settings globally
+    function applySettings(settings) {
+      if (settings.primaryColor) {
+        document.documentElement.style.setProperty('--primary', settings.primaryColor);
+        document.documentElement.style.setProperty('--primary-dark', settings.primaryColor);
+      }
+      if (settings.darkMode) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+      // Apply language direction
+      if (settings.language === 'en') {
+        document.documentElement.setAttribute('lang', 'en');
+        document.documentElement.setAttribute('dir', 'ltr');
+      } else {
+        document.documentElement.setAttribute('lang', 'ar');
+        document.documentElement.setAttribute('dir', 'rtl');
+      }
+    }
+
+    // Save settings
+    function saveSettings(section) {
+      const settings = JSON.parse(localStorage.getItem('hr_settings') || '{}');
+
+      switch (section) {
+        case 'general':
+          settings.language = document.getElementById('language').value;
+          settings.timezone = document.getElementById('timezone').value;
+          settings.dateFormat = document.getElementById('dateFormat').value;
+          settings.currency = document.getElementById('currency').value;
+          settings.darkMode = document.getElementById('darkMode').checked;
+          settings.primaryColor = document.querySelector('.color-option.active')?.dataset.color;
+          break;
+        case 'company':
+          settings.companyName = document.getElementById('companyName').value;
+          settings.companyEmail = document.getElementById('companyEmail').value;
+          settings.companyPhone = document.getElementById('companyPhone').value;
+          settings.commercialRegister = document.getElementById('commercialRegister').value;
+          settings.companyAddress = document.getElementById('companyAddress').value;
+          break;
+        case 'attendance':
+          settings.workStartTime = document.getElementById('workStartTime').value;
+          settings.workEndTime = document.getElementById('workEndTime').value;
+          settings.lateGrace = document.getElementById('lateGrace').value;
+          settings.autoAbsent = document.getElementById('autoAbsent').checked;
+          settings.autoSync = document.getElementById('autoSync').checked;
+          break;
+        case 'notifications':
+          settings.emailNotifications = document.getElementById('emailNotifications').checked;
+          settings.leaveNotifications = document.getElementById('leaveNotifications').checked;
+          settings.lateNotifications = document.getElementById('lateNotifications').checked;
+          settings.dailyReport = document.getElementById('dailyReport').checked;
+          break;
+        case 'security':
+          settings.twoFactor = document.getElementById('twoFactor').checked;
+          settings.autoLogout = document.getElementById('autoLogout').value;
+          break;
+      }
+
+      localStorage.setItem('hr_settings', JSON.stringify(settings));
+      applySettings(settings);
+      showNotification('تم حفظ الإعدادات بنجاح');
+
+      // Reload page for general settings to apply language/theme changes fully
+      if (section === 'general') {
+        setTimeout(() => window.location.reload(), 500);
+      }
+    }
+
+    // Change password
+    function changePassword() {
+      const current = document.getElementById('currentPassword').value;
+      const newPass = document.getElementById('newPassword').value;
+      const confirm = document.getElementById('confirmPassword').value;
+
+      if (!current || !newPass || !confirm) {
+        showNotification('يرجى ملء جميع الحقول', 'error');
+        return;
+      }
+
+      if (newPass !== confirm) {
+        showNotification('كلمة المرور غير متطابقة', 'error');
+        return;
+      }
+
+      if (newPass.length < 8) {
+        showNotification('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'error');
+        return;
+      }
+
+      // In real app, call API to change password
+      showNotification('تم تغيير كلمة المرور بنجاح');
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+    }
+
+    // Init
+    checkAuth();
+    loadSettings();
+  </script>
+</body>
+
+</html>

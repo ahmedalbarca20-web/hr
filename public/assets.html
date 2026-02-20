@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الممتلكات والعهد - HR Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .asset-card {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .asset-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-color: #ddd;
+        }
+
+        .asset-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .asset-icon {
+            width: 40px;
+            height: 40px;
+            background: #f0f2f5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .asset-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .status-store {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .status-assigned {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-maintenance {
+            background: #fef9c3;
+            color: #ca8a04;
+        }
+
+        .status-lost {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .assigned-user {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #f8fafc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #f1f5f9;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-right">
+                <h1>إدارة الممتلكات والعهد</h1>
+                <p>تتبع الأجهزة، السيارات، والممتلكات الأخرى</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddModal()">
+                <span><i class="fa-solid fa-plus"></i></span> إضافة أصل جديد
+            </button>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <div class="stat-value" id="totalAssets">0</div>
+                <div class="stat-label">إجمالي الأصول</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fa-solid fa-user-check"></i></div>
+                <div class="stat-value" id="assignedAssets">0</div>
+                <div class="stat-label">بعهدة موظف</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <div class="stat-value" id="maintenanceAssets">0</div>
+                <div class="stat-label">في الصيانة</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-icon"><i class="fa-solid fa-dollar-sign"></i></div>
+                <div class="stat-value" id="totalValue">0</div>
+                <div class="stat-label">القيمة الإجمالية</div>
+            </div>
+        </div>
+
+        <div class="filters-bar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="بحث عن أصل أو سيريال..." oninput="handleSearch()">
+            </div>
+            <select class="filter-select" id="typeFilter" onchange="handleFilter()">
+                <option value="">جميع الأنواع</option>
+                <option value="electronics">الكترونيات</option>
+                <option value="furniture">أثاث</option>
+                <option value="vehicle">سيارات</option>
+                <option value="other">أخرى</option>
+            </select>
+            <select class="filter-select" id="statusFilter" onchange="handleFilter()">
+                <option value="">جميع الحالات</option>
+                <option value="in_store">في المخزن</option>
+                <option value="assigned">مسلم لموظف</option>
+                <option value="maintenance">في الصيانة</option>
+                <option value="lost">مفقود / تالف</option>
+            </select>
+        </div>
+
+        <div id="assetsContainer" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="empty-state">
+                <div class="spinner"></div>
+                <p>جاري تحميل البيانات...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Add Asset Modal -->
+    <div class="modal-overlay" id="assetModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">إضافة أصل جديد</h2>
+                <button class="modal-close" onclick="closeModal('assetModal')">✕</button>
+            </div>
+            <form onsubmit="handleSubmit(event)">
+                <input type="hidden" id="assetId">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>اسم الأصل</label>
+                        <input type="text" id="assetName" required placeholder="مثال: لابتوب HP EliteBook">
+                    </div>
+                    <div class="form-group">
+                        <label>النوع</label>
+                        <select id="assetType" required>
+                            <option value="electronics">الكترونيات (لابتوب/موبايل)</option>
+                            <option value="vehicle">سيارات</option>
+                            <option value="furniture">أثاث ومكتب</option>
+                            <option value="other">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>الرقم التسلسلي (Serial No)</label>
+                        <input type="text" id="assetSerial" placeholder="S/N: 123456789">
+                    </div>
+                    <div class="form-group">
+                        <label>تاريخ الشراء / التسجيل</label>
+                        <input type="date" id="purchaseDate">
+                    </div>
+                    <div class="form-group">
+                        <label>قيمة الأصل</label>
+                        <input type="number" id="assetValue" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>الحالة الحالية</label>
+                        <select id="assetStatus" onchange="toggleAssigneeField()">
+                            <option value="in_store">في المخزن (متاح)</option>
+                            <option value="assigned">بعهدة موظف (مستخدم)</option>
+                            <option value="maintenance">في الصيانة</option>
+                            <option value="lost">مفقود / تالف</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="employeeField" style="display:none;">
+                        <label>الموظف المستلم</label>
+                        <select id="assignedEmployee">
+                            <option value="">-- اختر الموظف --</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>ملاحظات إضافية</label>
+                        <textarea id="assetNotes" placeholder="حالة الجهاز، ملحقاته، ..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('assetModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ البيانات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script>
+        let assets = [];
+        let employees = [];
+
+        async function loadData() {
+            try {
+                // Parallel fetch for assets and employees
+                const [assetsData, employeesData] = await Promise.all([
+                    api.getAll('assets'),
+                    api.getAll('employees')
+                ]);
+
+                assets = assetsData || [];
+                employees = employeesData || [];
+
+                renderAssets();
+                updateStats();
+                populateEmployeeDropdown();
+            } catch (error) {
+                console.error(error);
+                // showNotification('يرجى تشغيل سكربت V2 Upgrade أولاً', 'error');
+                document.getElementById('assetsContainer').innerHTML = `
+                <div class="empty-state" style="color:red;">
+                    <p>⚠️ قاعدة البيانات غير محدثة.</p>
+                    <p>يرجى تشغيل السكربت <code>UPGRADE_V2_FEATURES.sql</code> في Supabase.</p>
+                </div>
+            `;
+            }
+        }
+
+        function renderAssets(data = assets) {
+            const container = document.getElementById('assetsContainer');
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-box-open" style="font-size:48px; margin-bottom:10px;"></i>
+                    <p>لا توجد أصول مسجلة حالياً</p>
+                </div>
+            `;
+                return;
+            }
+
+            container.innerHTML = data.map(asset => {
+                const assignee = asset.employee_id ? employees.find(e => e.id === asset.employee_id) : null;
+                const statusConfig = getStatusConfig(asset.status);
+                const icon = getIcon(asset.type);
+
+                return `
+                <div class="asset-card">
+                    <div class="asset-info">
+                        <div class="asset-icon"><i class="${icon}"></i></div>
+                        <div>
+                            <div style="font-weight:bold; font-size:16px;">${asset.name}</div>
+                            <div style="font-size:12px; color:#888;">${asset.serial_number || 'No Serial'} • ${asset.type || 'Unknown'}</div>
+                            ${assignee ? `
+                                <div class="assigned-user">
+                                    <i class="fa-solid fa-user-circle"></i>
+                                    بعهدة: ${assignee.full_name}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div style="text-align:left;">
+                        <span class="asset-status ${statusConfig.class}">${statusConfig.text}</span>
+                        <div class="action-btns" style="justify-content:flex-end; margin-top:10px;">
+                            <button class="btn-icon edit" onclick="editAsset('${asset.id}')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon delete" onclick="deleteAsset('${asset.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function getStatusConfig(status) {
+            switch (status) {
+                case 'assigned': return { text: 'في العهدة', class: 'status-assigned' };
+                case 'maintenance': return { text: 'تحت الصيانة', class: 'status-maintenance' };
+                case 'lost': return { text: 'مفقود/تالف', class: 'status-lost' };
+                default: return { text: 'في المخزن', class: 'status-store' };
+            }
+        }
+
+        function getIcon(type) {
+            switch (type) {
+                case 'vehicle': return 'fa-solid fa-car';
+                case 'furniture': return 'fa-solid fa-chair';
+                case 'electronics': return 'fa-solid fa-laptop';
+                default: return 'fa-solid fa-box';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalAssets').textContent = assets.length;
+            document.getElementById('assignedAssets').textContent = assets.filter(a => a.status === 'assigned').length;
+            document.getElementById('maintenanceAssets').textContent = assets.filter(a => a.status === 'maintenance').length;
+
+            const totalVal = assets.reduce((sum, a) => sum + (parseFloat(a.value) || 0), 0);
+            document.getElementById('totalValue').textContent = formatCurrency(totalVal);
+        }
+
+        function populateEmployeeDropdown() {
+            const select = document.getElementById('assignedEmployee');
+            select.innerHTML = '<option value="">-- اختر الموظف --</option>';
+            employees.forEach(emp => {
+                select.innerHTML += `<option value="${emp.id}">${emp.full_name}</option>`;
+            });
+        }
+
+        function toggleAssigneeField() {
+            const status = document.getElementById('assetStatus').value;
+            const field = document.getElementById('employeeField');
+            if (status === 'assigned') {
+                field.style.display = 'block';
+            } else {
+                field.style.display = 'none';
+                document.getElementById('assignedEmployee').value = '';
+            }
+        }
+
+        // Modal Actions
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'إضافة أصل جديد';
+            document.getElementById('assetId').value = '';
+            document.getElementById('assetName').value = '';
+            document.getElementById('assetType').value = 'electronics';
+            document.getElementById('assetSerial').value = '';
+            document.getElementById('assetValue').value = '0';
+            document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('assetStatus').value = 'in_store';
+            document.getElementById('assignedEmployee').value = '';
+            document.getElementById('assetNotes').value = '';
+            toggleAssigneeField();
+            openModal('assetModal');
+        }
+
+        function editAsset(id) {
+            const asset = assets.find(a => a.id === id);
+            if (!asset) return;
+
+            document.getElementById('modalTitle').textContent = 'تعديل الأصل';
+            document.getElementById('assetId').value = asset.id;
+            document.getElementById('assetName').value = asset.name;
+            document.getElementById('assetType').value = asset.type;
+            document.getElementById('assetSerial').value = asset.serial_number || '';
+            document.getElementById('assetValue').value = asset.value || 0;
+            document.getElementById('purchaseDate').value = asset.purchase_date || '';
+            document.getElementById('assetStatus').value = asset.status;
+
+            // Handle logic for showing employee field
+            toggleAssigneeField();
+
+            // Must be set AFTER toggle to ensure field visibility is correct
+            if (asset.status === 'assigned') {
+                document.getElementById('assignedEmployee').value = asset.employee_id || '';
+            }
+
+            document.getElementById('assetNotes').value = asset.notes || '';
+            openModal('assetModal');
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('assetId').value;
+            const status = document.getElementById('assetStatus').value;
+            const employeeId = document.getElementById('assignedEmployee').value;
+
+            // Validation
+            if (status === 'assigned' && !employeeId) {
+                showNotification('يرجى اختيار الموظف المستلم للعهدة', 'error');
+                return;
+            }
+
+            const data = {
+                name: document.getElementById('assetName').value,
+                type: document.getElementById('assetType').value,
+                serial_number: document.getElementById('assetSerial').value,
+                value: parseFloat(document.getElementById('assetValue').value) || 0,
+                purchase_date: document.getElementById('purchaseDate').value || null,
+                status: status,
+                employee_id: (status === 'assigned' && employeeId) ? employeeId : null,
+                notes: document.getElementById('assetNotes').value,
+                company_id: '00000000-0000-0000-0000-000000000001' // Default company
+            };
+
+            try {
+                if (id) {
+                    await api.update('assets', id, data);
+                    showNotification('تم تحديث الأصل بنجاح');
+                } else {
+                    await api.create('assets', data);
+                    showNotification('تم إضافة الأصل بنجاح');
+                }
+                closeModal('assetModal');
+                loadData();
+            } catch (error) {
+                showNotification('حدث خطأ: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteAsset(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الأصل؟')) return;
+            try {
+                await api.delete('assets', id);
+                showNotification('تم الحذف بنجاح');
+                loadData();
+            } catch (error) {
+                showNotification('حدث خطأ: ' + error.message, 'error');
+            }
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+
+            let filtered = assets.filter(a => {
+                const matchesQuery = !query ||
+                    a.name.toLowerCase().includes(query) ||
+                    (a.serial_number && a.serial_number.toLowerCase().includes(query));
+                const matchesType = !type || a.type === type;
+                const matchesStatus = !status || a.status === status;
+
+                return matchesQuery && matchesType && matchesStatus;
+            });
+
+            renderAssets(filtered);
+        }
+
+        function handleFilter() {
+            handleSearch();
+        }
+
+        // Init
+        checkAuth();
+        loadData();
+    </script>
+</body>
+
+</html>

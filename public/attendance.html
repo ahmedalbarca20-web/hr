@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الحضور والانصراف - HR Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="header">
+      <div class="header-right">
+        <h1>الحضور والانصراف</h1>
+        <p>متابعة سجلات الحضور والانصراف للموظفين</p>
+      </div>
+      <div class="header-left" style="display:flex; gap:12px;">
+        <button class="btn btn-info" onclick="openExportModal()" data-admin-only style="display:none;">
+          <span><i class="fa-solid fa-cog"></i></span> خيارات التصدير
+        </button>
+        <button class="btn btn-secondary" onclick="exportAttendance()">
+          <span><i class="fa-solid fa-file-excel"></i></span> تصدير اكسل
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <span><i class="fa-solid fa-plus"></i></span> تسجيل يدوي
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card success">
+        <div class="stat-icon"><i class="fa-solid fa-user-check"></i></div>
+        <div class="stat-value" id="presentCount">0</div>
+        <div class="stat-label">حاضر اليوم</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-icon"><i class="fa-solid fa-user-xmark"></i></div>
+        <div class="stat-value" id="absentCount">0</div>
+        <div class="stat-label">غائب</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+        <div class="stat-value" id="lateCount">0</div>
+        <div class="stat-label">متأخر</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-icon"><i class="fa-solid fa-house"></i></div>
+        <div class="stat-value" id="leaveCount">0</div>
+        <div class="stat-label">في إجازة</div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="البحث عن موظف..." oninput="handleSearch()">
+      </div>
+      <input type="date" class="filter-select" id="dateFilter" onchange="handleFilter()">
+      <select class="filter-select" id="statusFilter" onchange="handleFilter()">
+        <option value="">جميع الحالات</option>
+        <option value="present">حاضر</option>
+        <option value="absent">غائب</option>
+        <option value="late">متأخر</option>
+      </select>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>الموظف</th>
+            <th>التاريخ</th>
+            <th>وقت الحضور</th>
+            <th>وقت الانصراف</th>
+            <th>ساعات العمل</th>
+            <th>الحالة</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="7" class="loading-cell">جاري التحميل...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="attendanceModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">تسجيل حضور يدوي</h2>
+        <button class="modal-close" onclick="closeModal('attendanceModal')">✕</button>
+      </div>
+      <form onsubmit="handleSubmit(event)">
+        <input type="hidden" id="attendanceId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>الموظف</label>
+            <select id="employeeId" required>
+              <option value="">-- اختر الموظف --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>التاريخ</label>
+            <input type="date" id="date" required>
+          </div>
+          <div class="form-group">
+            <label>وقت الحضور</label>
+            <input type="time" id="checkIn">
+          </div>
+          <div class="form-group">
+            <label>وقت الانصراف</label>
+            <input type="time" id="checkOut">
+          </div>
+          <div class="form-group full-width">
+            <label>ملاحظات</label>
+            <textarea id="notes" placeholder="أي ملاحظات إضافية..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('attendanceModal')">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script>
+    let attendance = [];
+    let employees = [];
+
+    let currentCompanyId = '00000000-0000-0000-0000-000000000001';
+
+    // Load data
+    async function loadData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const forcedCompanyId = urlParams.get('company_id');
+      const forcedEmployeeId = urlParams.get('employee_id');
+
+      if (forcedCompanyId) currentCompanyId = forcedCompanyId;
+
+      try {
+        let attRes = await api.getAll('attendance');
+        let empRes = await api.getAll('employees');
+
+        // Filter by Company
+        if (forcedCompanyId) {
+          attRes = attRes.filter(a => a.company_id === forcedCompanyId);
+          empRes = empRes.filter(e => e.company_id === forcedCompanyId);
+        }
+
+        // Filter by Employee
+        if (forcedEmployeeId) {
+          attRes = attRes.filter(a => a.employee_id === forcedEmployeeId);
+
+          // Set header title
+          const emp = empRes.find(e => e.id === forcedEmployeeId);
+          if (emp) {
+            document.querySelector('.header-right h1').textContent = `سجل حضور: ${emp.full_name}`;
+            document.querySelector('.header-right p').textContent = `عرض سجلات الحضور للموظف ${emp.full_name}`;
+
+            // Clear date filter to show history
+            document.getElementById('dateFilter').value = '';
+          }
+        }
+
+        attendance = attRes;
+        employees = empRes;
+
+        renderTable();
+        populateEmployeeSelect();
+        if (forcedEmployeeId) document.getElementById('employeeId').value = forcedEmployeeId;
+
+        updateStats();
+      } catch (error) {
+        showNotification('حدث خطأ في تحميل البيانات: ' + error.message, 'error');
+      }
+    }
+
+    // Update stats
+    function updateStats() {
+      const today = new Date().toISOString().split('T')[0];
+      const todayRecords = attendance.filter(a => a.date?.startsWith(today));
+
+      document.getElementById('presentCount').textContent = todayRecords.filter(a => a.check_in && !(a.late_minutes > 0)).length;
+      document.getElementById('absentCount').textContent = employees.length - todayRecords.length;
+      document.getElementById('lateCount').textContent = todayRecords.filter(a => a.late_minutes > 0).length;
+      document.getElementById('leaveCount').textContent = '0'; // TODO: From leave records
+    }
+
+    function exportAttendance() {
+      exportTableToCsv('attendance-export.csv', '.table-card table');
+    }
+
+    // Populate employee select
+    function populateEmployeeSelect() {
+      const select = document.getElementById('employeeId');
+      select.innerHTML = '<option value="">-- اختر الموظف --</option>';
+      employees.forEach(emp => {
+        select.innerHTML += `<option value="${emp.id}">${emp.full_name}</option>`;
+      });
+    }
+
+    // Calculate work hours
+    function calculateHours(checkIn, checkOut) {
+      if (!checkIn || !checkOut) return '-';
+      const start = new Date(`2000-01-01 ${checkIn}`);
+      const end = new Date(`2000-01-01 ${checkOut}`);
+      const diff = (end - start) / (1000 * 60 * 60);
+      return diff > 0 ? diff.toFixed(1) + ' ساعة' : '-';
+    }
+
+    // Get status
+    function getStatus(record) {
+      if (!record.check_in) return { text: 'غائب', class: 'absent' };
+      if (record.late_minutes > 0) return { text: 'متأخر', class: 'pending' };
+      return { text: 'حاضر', class: 'active' };
+    }
+
+    // Render table
+    function renderTable(data = attendance) {
+      const tbody = document.getElementById('tableBody');
+
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="loading-cell">لا توجد سجلات</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(record => {
+        const employee = employees.find(e => e.id === record.employee_id);
+        const status = getStatus(record);
+
+        return `
+          <tr>
+            <td>
+              <div class="employee-cell">
+                <div class="employee-avatar" style="background: ${getAvatarColor(employee?.full_name || '')}">
+                  ${getInitials(employee?.full_name)}
+                </div>
+                <span>${employee?.full_name || '-'}</span>
+              </div>
+            </td>
+            <td>${formatDate(record.date)}</td>
+            <td>${record.check_in || '-'}</td>
+            <td>${record.check_out || '-'}</td>
+            <td>${calculateHours(record.check_in, record.check_out)}</td>
+            <td><span class="status-badge ${status.class}">${status.text}</span></td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-icon edit" onclick="editRecord('${record.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-icon delete" onclick="deleteRecord('${record.id}')"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Search & Filter
+    function handleSearch() {
+      handleFilter();
+    }
+
+    function handleFilter() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const date = document.getElementById('dateFilter').value;
+      const status = document.getElementById('statusFilter').value;
+
+      let filtered = attendance;
+
+      if (query) {
+        filtered = filtered.filter(a => {
+          const emp = employees.find(e => e.id === a.employee_id);
+          return emp?.full_name?.toLowerCase().includes(query);
+        });
+      }
+
+      if (date) {
+        filtered = filtered.filter(a => a.date?.startsWith(date));
+      }
+
+      if (status === 'present') {
+        filtered = filtered.filter(a => a.check_in && !(a.late_minutes > 0));
+      } else if (status === 'absent') {
+        filtered = filtered.filter(a => !a.check_in);
+      } else if (status === 'late') {
+        filtered = filtered.filter(a => a.late_minutes > 0);
+      }
+
+      renderTable(filtered);
+    }
+
+    // Open add modal
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = 'تسجيل حضور يدوي';
+      document.getElementById('attendanceId').value = '';
+      document.getElementById('employeeId').value = '';
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('checkIn').value = '';
+      document.getElementById('checkOut').value = '';
+      document.getElementById('notes').value = '';
+      openModal('attendanceModal');
+    }
+
+    // Edit
+    function editRecord(id) {
+      const record = attendance.find(a => a.id === id);
+      if (!record) return;
+
+      document.getElementById('modalTitle').textContent = 'تعديل سجل الحضور';
+      document.getElementById('attendanceId').value = record.id;
+      document.getElementById('employeeId').value = record.employee_id || '';
+      document.getElementById('date').value = record.date?.split('T')[0] || '';
+      document.getElementById('checkIn').value = record.check_in || '';
+      document.getElementById('checkOut').value = record.check_out || '';
+      document.getElementById('notes').value = record.notes || '';
+      openModal('attendanceModal');
+    }
+
+    // Submit
+    async function handleSubmit(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('attendanceId').value;
+      const data = {
+        employee_id: document.getElementById('employeeId').value,
+        date: document.getElementById('date').value,
+        check_in: document.getElementById('checkIn').value || null,
+        check_out: document.getElementById('checkOut').value || null,
+        notes: document.getElementById('notes').value,
+        company_id: currentCompanyId
+      };
+
+      try {
+        if (id) {
+          await api.update('attendance', id, data);
+          showNotification('تم تحديث السجل بنجاح');
+        } else {
+          await api.create('attendance', data);
+          showNotification('تم تسجيل الحضور بنجاح');
+        }
+        closeModal('attendanceModal');
+        loadData();
+      } catch (error) {
+        showNotification('حدث خطأ: ' + error.message, 'error');
+      }
+    }
+
+    // Delete
+    async function deleteRecord(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+
+      try {
+        await api.delete('attendance', id);
+        showNotification('تم حذف السجل بنجاح');
+        loadData();
+      } catch (error) {
+        showNotification('حدث خطأ: ' + error.message, 'error');
+      }
+    }
+
+    // Enhanced Export with Options
+    function openExportModal() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal" style="width: 90%; max-width: 400px;">
+          <div class="modal-header">
+            <h2>خيارات التصدير</h2>
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+          </div>
+          <div style="padding: 20px;">
+            <div class="form-group">
+              <label>من التاريخ</label>
+              <input type="date" id="export-start-date" value="${document.getElementById('dateFilter').value}">
+            </div>
+            <div class="form-group">
+              <label>إلى التاريخ</label>
+              <input type="date" id="export-end-date" value="${document.getElementById('dateFilter').value}">
+            </div>
+            <div class="form-group" data-admin-only style="display:none;">
+              <label>الشركة</label>
+              <select id="export-company-select">
+                <option value="">الشركة الحالية</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>صيغة التصدير</label>
+              <select id="export-format">
+                <option value="csv">CSV (Excel)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">إلغاء</button>
+            <button class="btn btn-primary" onclick="exportWithOptions(this)">تصدير</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      showAdminFeatures();
+    }
+
+    function exportWithOptions(btn) {
+      const startDate = document.getElementById('export-start-date').value;
+      const endDate = document.getElementById('export-end-date').value;
+      const format = document.getElementById('export-format').value;
+
+      if (!startDate || !endDate) {
+        alert('يرجى اختيار نطاق التاريخ');
+        return;
+      }
+
+      // Filter table by dates
+      const allRows = document.querySelectorAll('.table-card table tbody tr');
+      const filteredData = [];
+      const headers = [];
+
+      document.querySelectorAll('.table-card table thead th').forEach(th => {
+        headers.push(th.textContent.trim());
+      });
+
+      allRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 1) {
+          const dateCell = cells[1]?.textContent.trim();
+          if (dateCell && dateCell >= startDate && dateCell <= endDate) {
+            const rowData = [];
+            cells.forEach(cell => rowData.push(cell.textContent.trim()));
+            filteredData.push(rowData);
+          }
+        }
+      });
+
+      if (filteredData.length === 0) {
+        alert('لا توجد بيانات في النطاق المحدد');
+        return;
+      }
+
+      // Create CSV
+      const csv = [headers].concat(filteredData).map(row => {
+        return row.map(cell => {
+          const escaped = (cell || '').replace(/"/g, '""');
+          return `"${escaped}"`;
+        }).join(',');
+      }).join('\n');
+
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `attendance-${startDate}_to_${endDate}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      btn.closest('.modal-overlay').remove();
+      showNotification('تم التصدير بنجاح');
+    }
+
+    // Set default date filter to today
+    document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
+
+    // Init
+    checkAuth();
+    showAdminFeatures();
+    loadData();
+  </script>
+  </script>
+</body>
+
+</html>

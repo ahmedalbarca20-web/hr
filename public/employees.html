@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الموظفين - نظام الموارد البشرية</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="header">
+      <div class="header-right">
+        <h1>إدارة الموظفين</h1>
+        <p>عرض وإدارة جميع الموظفين</p>
+      </div>
+      <div class="header-left">
+        <button class="btn btn-info" onclick="openExportModal()" data-admin-only style="display:none;">
+          <span><i class="fa-solid fa-cog"></i></span> خيارات التصدير
+        </button>
+        <button class="btn btn-secondary" onclick="exportEmployees()">
+          <span><i class="fa-solid fa-file-excel"></i></span> تصدير اكسل
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <span><i class="fa-solid fa-plus"></i></span> إضافة موظف
+        </button>
+      </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="بحث عن موظف..." oninput="filterEmployees()">
+      </div>
+      <select id="statusFilter" class="filter-select" onchange="filterEmployees()">
+        <option value="">جميع الحالات</option>
+        <option value="active">نشط</option>
+        <option value="inactive">غير نشط</option>
+      </select>
+      <select id="departmentFilter" class="filter-select" onchange="filterEmployees()">
+        <option value="">جميع الأقسام</option>
+      </select>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>الموظف</th>
+            <th>البريد الإلكتروني</th>
+            <th>القسم</th>
+            <th>الراتب</th>
+            <th>تاريخ التعيين</th>
+            <th>الحالة</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="employeesTable">
+          <tr>
+            <td colspan="7" class="loading-cell">جاري التحميل...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="modalTitle">إضافة موظف جديد</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <form id="employeeForm" onsubmit="saveEmployee(event)">
+        <input type="hidden" id="employeeId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>الاسم الكامل *</label>
+            <input type="text" id="fullName" required>
+          </div>
+          <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" id="email">
+          </div>
+          <div class="form-group">
+            <label>القسم</label>
+            <select id="departmentId">
+              <option value="">اختر القسم</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الراتب الأساسي</label>
+            <input type="number" id="salary" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>ساعات العمل اليومية</label>
+            <input type="number" id="workHoursPerDay" step="0.5" min="0" placeholder="مثال: 8">
+          </div>
+          <div class="form-group">
+            <label>ساعات العمل الأسبوعية</label>
+            <input type="number" id="workHoursPerWeek" step="0.5" min="0" placeholder="مثال: 40">
+          </div>
+          <div class="form-group">
+            <label>تاريخ التعيين</label>
+            <input type="date" id="hireDate">
+          </div>
+          <div class="form-group">
+            <label>رقم البصمة</label>
+            <input type="text" id="biometricId">
+          </div>
+          <div class="form-group">
+            <label>الدور</label>
+            <input type="text" id="role" placeholder="مثال: محاسب، مهندس...">
+          </div>
+          <div class="form-group">
+            <label>الحالة</label>
+            <select id="status">
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Documents Modal -->
+  <div class="modal-overlay" id="documentsModal">
+    <div class="modal" style="width: 600px;">
+      <div class="modal-header">
+        <h2 id="documentsTitle">ملفات الموظف</h2>
+        <button class="modal-close" onclick="closeModalDoc()">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <!-- Add Document Form -->
+        <form onsubmit="saveDocument(event)"
+          style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <input type="hidden" id="docEmployeeId">
+          <h4 style="margin-top:0; margin-bottom:10px;">إضافة وثيقة جديدة</h4>
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label>نوع الوثيقة</label>
+              <select id="docTitle" required>
+                <option value="contract">عقد عمل</option>
+                <option value="id_card">هوية وطنية / إقامة</option>
+                <option value="passport">جواز سفر</option>
+                <option value="certificate">شهادة جامعية</option>
+                <option value="other">أخرى</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>تاريخ الانتهاء (للتنبيه)</label>
+              <input type="date" id="docExpiry">
+            </div>
+            <div class="form-group full-width" style="grid-column: span 2;">
+              <label>رابط الملف (Google Drive / Dropbox)</label>
+              <input type="url" id="docUrl" placeholder="https://..." required>
+            </div>
+          </div>
+          <div style="text-align: left; margin-top: 10px;">
+            <button type="submit" class="btn btn-primary btn-sm">حفظ الوثيقة</button>
+          </div>
+        </form>
+
+        <!-- Documents List -->
+        <h4 style="margin-bottom: 10px;">الوثائق الحالية</h4>
+        <div id="documentsList" style="max-height: 300px; overflow-y: auto;">
+          <div class="empty-state">
+            <p>جاري التحميل...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script>
+    let allEmployees = [];
+    let departments = [];
+
+    let currentCompanyId = '00000000-0000-0000-0000-000000000001';
+
+    async function loadData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const forcedCompanyId = urlParams.get('company_id');
+      const forcedDeptId = urlParams.get('department_id');
+
+      if (forcedCompanyId) currentCompanyId = forcedCompanyId;
+
+      try {
+        // Load departments
+        const deptRes = await fetchData('/departments');
+
+        if (deptRes) {
+          departments = Array.isArray(deptRes) ? deptRes : (deptRes.data || []);
+
+          if (!forcedCompanyId && departments.length > 0 && departments[0].company_id) {
+            currentCompanyId = departments[0].company_id;
+            console.log('Using detected Company ID:', currentCompanyId);
+          } else if (forcedCompanyId) {
+            departments = departments.filter(d => d.company_id === forcedCompanyId);
+          }
+
+          const select = document.getElementById('departmentFilter');
+          const formSelect = document.getElementById('departmentId');
+
+          // Clear previous options
+          select.innerHTML = '<option value="">جميع الأقسام</option>';
+          formSelect.innerHTML = '<option value="">اختر القسم</option>';
+
+          departments.forEach(d => {
+            const isSelected = d.id === forcedDeptId ? 'selected' : '';
+            select.innerHTML += `<option value="${d.id}" ${isSelected}>${d.name}</option>`;
+            formSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+          });
+
+          if (forcedDeptId) select.value = forcedDeptId;
+        }
+
+        // Load employees
+        const empRes = await fetchData('/employees');
+        if (empRes) {
+          allEmployees = Array.isArray(empRes) ? empRes : (empRes.data || []);
+
+          if (forcedCompanyId) {
+            allEmployees = allEmployees.filter(e => e.company_id === forcedCompanyId);
+
+            // Update header if company known
+            api.getOne('companies', forcedCompanyId).then(c => {
+              if (c) document.querySelector('.header-right p').textContent = `إدارة الموظفين - ${c.name}`;
+            }).catch(() => { });
+          }
+
+          if (forcedDeptId) {
+            allEmployees = allEmployees.filter(e => e.department_id === forcedDeptId);
+          }
+
+          renderTable(allEmployees);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function filterEmployees() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const dept = document.getElementById('departmentFilter').value;
+
+      const filtered = allEmployees.filter(emp => {
+        const matchSearch = !search ||
+          (emp.full_name && emp.full_name.toLowerCase().includes(search)) ||
+          (emp.email && emp.email.toLowerCase().includes(search));
+        const matchStatus = !status || emp.status === status;
+        const matchDept = !dept || emp.department_id === dept;
+        return matchSearch && matchStatus && matchDept;
+      });
+
+      renderTable(filtered);
+    }
+
+    const colors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
+
+    function renderTable(employees) {
+      if (!employees || employees.length === 0) {
+        document.getElementById('employeesTable').innerHTML = `
+          <tr><td colspan="7" class="loading-cell">لا يوجد موظفين</td></tr>
+        `;
+        return;
+      }
+
+      const getDeptName = (id) => {
+        const dept = departments.find(d => d.id === id);
+        return dept ? dept.name : 'غير محدد';
+      };
+
+      document.getElementById('employeesTable').innerHTML = employees.map((emp, i) => `
+        <tr>
+          <td>
+            <div class="employee-cell">
+              <div class="employee-avatar" style="background: ${colors[i % colors.length]}">${(emp.full_name || 'م').charAt(0)}</div>
+              <span>${emp.full_name || '-'}</span>
+              <button class="btn-icon" style="margin-right:5px; font-size:12px; color:#6366f1" onclick="openDocumentsModal('${emp.id}', '${emp.full_name}')" title="الوثائق"><i class="fa-solid fa-folder"></i></button>
+            </div>
+          </td>
+          <td>${emp.email || '-'}</td>
+          <td>${getDeptName(emp.department_id)}</td>
+          <td>${emp.salary ? emp.salary.toLocaleString() + ' ر.س' : '-'}</td>
+          <td>${emp.hire_date || '-'}</td>
+          <td><span class="status-badge ${emp.status === 'active' ? 'active' : 'inactive'}">${emp.status === 'active' ? 'نشط' : 'غير نشط'}</span></td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-icon edit" onclick="editEmployee('${emp.id}')"><i class="fa-solid fa-pen"></i></button>
+              <a href="/attendance.html?employee_id=${emp.id}&company_id=${currentCompanyId}" class="btn-icon" title="سجل الحضور" style="color:#0ea5e9"><i class="fa-solid fa-clock"></i></a>
+              <button class="btn-icon delete" onclick="deleteEmployee('${emp.id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = 'إضافة موظف جديد';
+      document.getElementById('employeeForm').reset();
+      document.getElementById('employeeId').value = '';
+      document.getElementById('modalOverlay').classList.add('show');
+    }
+
+    function editEmployee(id) {
+      const emp = allEmployees.find(e => e.id === id);
+      if (!emp) return;
+
+      document.getElementById('modalTitle').textContent = 'تعديل بيانات الموظف';
+      document.getElementById('employeeId').value = emp.id;
+      document.getElementById('fullName').value = emp.full_name || '';
+      document.getElementById('email').value = emp.email || '';
+      document.getElementById('departmentId').value = emp.department_id || '';
+      document.getElementById('salary').value = emp.salary || '';
+      document.getElementById('workHoursPerDay').value = emp.work_hours_per_day || '';
+      document.getElementById('workHoursPerWeek').value = emp.work_hours_per_week || '';
+      document.getElementById('hireDate').value = emp.hire_date || '';
+      document.getElementById('biometricId').value = emp.biometric_id || '';
+      document.getElementById('role').value = emp.role || '';
+      document.getElementById('status').value = emp.status || 'active';
+      document.getElementById('modalOverlay').classList.add('show');
+    }
+
+    async function saveEmployee(e) {
+      e.preventDefault();
+      const id = document.getElementById('employeeId').value;
+      const data = {
+        company_id: currentCompanyId,
+        full_name: document.getElementById('fullName').value,
+        email: document.getElementById('email').value || null,
+        department_id: document.getElementById('departmentId').value || null,
+        salary: document.getElementById('salary').value ? parseFloat(document.getElementById('salary').value) : null,
+        work_hours_per_day: document.getElementById('workHoursPerDay').value ? parseFloat(document.getElementById('workHoursPerDay').value) : null,
+        work_hours_per_week: document.getElementById('workHoursPerWeek').value ? parseFloat(document.getElementById('workHoursPerWeek').value) : null,
+        hire_date: document.getElementById('hireDate').value || null,
+        biometric_id: document.getElementById('biometricId').value || null,
+        role: document.getElementById('role').value || null,
+        status: document.getElementById('status').value,
+      };
+
+      let result;
+      if (id) {
+        result = await fetchData(`/employees/${id}`, 'PATCH', data);
+      } else {
+        result = await fetchData('/employees', 'POST', data);
+      }
+
+      if (result) {
+        closeModal();
+        loadData();
+        showNotification(id ? 'تم تحديث بيانات الموظف' : 'تم إضافة الموظف بنجاح', 'success');
+      }
+    }
+
+    async function deleteEmployee(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
+
+      const result = await fetchData(`/employees/${id}`, 'DELETE');
+      if (result) {
+        loadData();
+        showNotification('تم حذف الموظف', 'success');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('show');
+    }
+
+    // --- Documents Functions ---
+
+    function closeModalDoc() {
+      document.getElementById('documentsModal').classList.remove('show');
+    }
+
+    async function openDocumentsModal(empId, empName) {
+      document.getElementById('documentsTitle').textContent = `ملفات الموظف: ${empName}`;
+      document.getElementById('docEmployeeId').value = empId;
+      document.getElementById('documentsModal').classList.add('show');
+      loadDocuments(empId);
+    }
+
+    async function loadDocuments(empId) {
+      const list = document.getElementById('documentsList');
+      list.innerHTML = '<div class="empty-state"><p>جاري التحميل...</p></div>';
+
+      try {
+        const docs = await fetchData(`/documents?employee_id=${empId}`);
+        if (!docs || docs.length === 0) {
+          list.innerHTML = '<div class="empty-state"><p>لا توجد وثائق مسجلة لهذا الموظف</p></div>';
+          return;
+        }
+
+        list.innerHTML = docs.map(doc => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:white; border:1px solid #eee; padding:10px; border-radius:6px; margin-bottom:8px;">
+                    <div>
+                        <strong>${getDocumentTitle(doc.title)}</strong>
+                        <div style="font-size:12px; color:#666;">
+                            ${doc.expiry_date ? `ينتهي في: ${doc.expiry_date}` : 'لا يوجد تاريخ انتهاء'}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <a href="${doc.file_url}" target="_blank" class="btn-icon" style="color:#0ea5e9"><i class="fa-solid fa-eye"></i></a>
+                        <button class="btn-icon delete" onclick="deleteDocument('${doc.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+
+      } catch (e) {
+        console.error(e);
+        list.innerHTML = '<div class="empty-state" style="color:red"><p>خطأ في تحميل الوثائق</p></div>';
+      }
+    }
+
+    function getDocumentTitle(key) {
+      const titles = {
+        'contract': 'عقد عمل',
+        'id_card': 'هوية / إقامة',
+        'passport': 'جواز سفر',
+        'certificate': 'شهادة',
+        'other': 'أخرى'
+      };
+      return titles[key] || key;
+    }
+
+    async function saveDocument(e) {
+      e.preventDefault();
+      const empId = document.getElementById('docEmployeeId').value;
+      const data = {
+        employee_id: empId,
+        title: document.getElementById('docTitle').value,
+        file_url: document.getElementById('docUrl').value,
+        expiry_date: document.getElementById('docExpiry').value || null,
+      };
+
+      try {
+        await fetchData('/documents', 'POST', data);
+        showNotification('تم حفظ الوثيقة بنجاح');
+        // Clear form
+        document.getElementById('docUrl').value = '';
+        document.getElementById('docExpiry').value = '';
+        // Reload list
+        loadDocuments(empId);
+      } catch (error) {
+        showNotification('فشل الحفظ: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteDocument(docId) {
+      if (!confirm('هل أنت متأكد من حذف هذه الوثيقة؟')) return;
+      try {
+        await fetchData(`/documents/${docId}`, 'DELETE');
+        showNotification('تم الحذف');
+        loadDocuments(document.getElementById('docEmployeeId').value);
+      } catch (error) {
+        showNotification('فشل الحذف', 'error');
+      }
+    }
+
+    // Enhanced Export with Options
+    function openExportModal() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal" style="width: 90%; max-width: 400px;">
+          <div class="modal-header">
+            <h2>خيارات التصدير</h2>
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+          </div>
+          <div style="padding: 20px;">
+            <div class="form-group">
+              <label>الحالة</label>
+              <select id="export-status">
+                <option value="">الكل</option>
+                <option value="active">نشط</option>
+                <option value="inactive">غير نشط</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>القسم</label>
+              <select id="export-department">
+                <option value="">جميع الأقسام</option>
+              </select>
+            </div>
+            <div class="form-group" data-admin-only style="display:none;">
+              <label>الشركة</label>
+              <select id="export-company-select">
+                <option value="">الشركة الحالية</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>صيغة التصدير</label>
+              <select id="export-format">
+                <option value="csv">CSV (Excel)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">إلغاء</button>
+            <button class="btn btn-primary" onclick="exportWithOptions(this)">تصدير</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Populate departments
+      const select = modal.querySelector('#export-department');
+      const options = document.getElementById('departmentFilter').innerHTML;
+      select.innerHTML = options;
+      showAdminFeatures();
+    }
+
+    function exportEmployees() {
+      exportTableToCsv('employees-export.csv', '.table-card table');
+    }
+
+    function exportWithOptions(btn) {
+      const status = document.getElementById('export-status').value;
+      const department = document.getElementById('export-department').value;
+
+      // Filter table
+      const allRows = document.querySelectorAll('.table-card table tbody tr');
+      const filteredData = [];
+      const headers = [];
+
+      document.querySelectorAll('.table-card table thead th').forEach(th => {
+        headers.push(th.textContent.trim());
+      });
+
+      allRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 1) {
+          const rowStatus = cells[5]?.textContent.trim(); // Adjusted index for status
+          const rowDept = cells[2]?.textContent.trim();
+
+          const matchStatus = !status || rowStatus.includes(status === 'active' ? 'نشط' : 'غير نشط');
+          const matchDept = !department || rowDept.includes(department);
+
+          if (matchStatus && matchDept) {
+            const rowData = [];
+            cells.forEach(cell => rowData.push(cell.innerText.trim())); // Use innerText to avoid hidden elements
+            filteredData.push(rowData);
+          }
+        }
+      });
+
+      if (filteredData.length === 0) {
+        alert('لا توجد بيانات مطابقة');
+        return;
+      }
+
+      // Create CSV
+      const csv = [headers].concat(filteredData).map(row => {
+        return row.map(cell => {
+          const escaped = (cell || '').replace(/"/g, '""');
+          return `"${escaped}"`;
+        }).join(',');
+      }).join('\n');
+
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `employees-export.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      btn.closest('.modal-overlay').remove();
+      showNotification('تم التصدير بنجاح');
+    }
+
+    showAdminFeatures();
+    loadData();
+  </script>
+</body>
+
+</html>

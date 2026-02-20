@@ -1,0 +1,70 @@
+⚡ تفعيل الصلاحيات الإدارية - خطوات سريعة
+============================================
+
+## 📋 ملخص المشكلة:
+- الملفات والبيانات غير موجودة
+- لا توجد صلاحيات إدارية
+
+## ✅ الحل في خطوات:
+
+### 1️⃣ إنشاء المستخدمين (5 دقائق)
+- اذهب: https://app.supabase.com
+- اختر مشروعك
+- Authentication > Users
+- Create New User
+
+أنشئ هذه المستخدمات:
+```
+1. admin@demo.com / Demo@123456 (Super Admin)
+2. ahmad@rafideen.com / Demo@123456 (HR Manager)
+3. yousif@alnoor.com / Demo@123456 (HR Manager)
+4. raya@consultancy.com / Demo@123456 (Admin)
+```
+
+### 2️⃣ نسخ UUIDs
+في SQL Editor، شغل:
+```sql
+SELECT id, email FROM auth.users;
+```
+
+انسخ الـ IDs الأربعة
+
+### 3️⃣ تحديث البيانات
+في ملف: `supabase/seed.sql`
+
+ابحث عن:
+```sql
+insert into user_profiles
+```
+
+استبدل UUIDs المزيفة بالفعلية:
+- 00000000...100000000001 → Super Admin UUID
+- 00000000...100000000002 → ahmad UUID
+- 00000000...100000000003 → yousif UUID
+- 00000000...100000000004 → raya UUID
+
+### 4️⃣ تنفيذ قاعدة البيانات
+في Supabase SQL Editor:
+```
+1. نسخ محتوى: supabase/schema.sql → Execute
+2. نسخ محتوى: supabase/rls.sql → Execute  
+3. نسخ محتوى: supabase/seed.sql → Execute
+```
+
+### 5️⃣ اختبر الآن!
+```
+Email: admin@demo.com
+Password: Demo@123456
+
+اضغط Login → يجب توجيه إلى admin.html
+```
+
+---
+
+## 🎯 للمزيد من التفاصيل:
+اقرأ: `FIX_ADMIN_PERMISSIONS.md`
+
+## 🆘 لم يعمل؟
+1. افحص console (F12)
+2. تحقق أن المستخدمين في Supabase Auth موجودين
+3. تأكد من UUIDs الصحيحة

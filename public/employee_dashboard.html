@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الموظف - HR Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .section-header h3 {
+            font-size: 18px;
+            color: #333;
+            margin: 0;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover {
+            background: #f9f9f9;
+            transform: translateY(-2px);
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: #777;
+        }
+
+        .priority-high {
+            border-right: 4px solid #ef4444;
+        }
+
+        .priority-medium {
+            border-right: 4px solid #f59e0b;
+        }
+
+        .priority-low {
+            border-right: 4px solid #10b981;
+        }
+
+        .leave-balance-card {
+            background: linear-gradient(135deg, #4f46e5, #3b82f6);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .leave-balance-number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .status-approved {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .status-rejected {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-right">
+                <h1>مرحباً، <span id="employeeTag">...</span> 👋</h1>
+                <p>لوحة التحكم الخاصة بك</p>
+            </div>
+            <div class="header-left">
+                <button class="btn btn-primary" onclick="openLeaveModal()">
+                    <span><i class="fa-solid fa-plus"></i></span> طلب إجازة
+                </button>
+            </div>
+        </header>
+
+        <!-- Top Stats -->
+        <div class="stats-grid">
+            <div class="stat-card info">
+                <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                <div class="stat-value" id="daysPresent">0</div>
+                <div class="stat-label">أيام الحضور (هذا الشهر)</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+                <div class="stat-value" id="lateMinutes">0</div>
+                <div class="stat-label">دقائق التأخير</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
+                <div class="stat-value" id="completedTasks">0</div>
+                <div class="stat-label">مهام منجزة</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Tasks Section -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h3>📋 المهام المسندة إليك</h3>
+                    <span class="badge" id="pendingTasksCount">0</span>
+                </div>
+                <div id="tasksList">
+                    <p style="text-align: center; color: #999;">جاري التحميل...</p>
+                </div>
+            </div>
+
+            <!-- Recent Attendance -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h3>🕒 آخر سجلات الحضور</h3>
+                </div>
+                <table class="simple-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: right; border-bottom: 2px solid #eee;">
+                            <th style="padding: 8px;">التاريخ</th>
+                            <th style="padding: 8px;">دخول</th>
+                            <th style="padding: 8px;">خروج</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceList">
+                        <!-- Attendance rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Active Leaves -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3>✈️ طلبات الإجازة</h3>
+            </div>
+            <div id="leavesList">
+                <!-- Leave rows -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Leave Modal -->
+    <div class="modal-overlay" id="leaveModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>طلب إجازة جديد</h2>
+                <button class="modal-close" onclick="closeModal('leaveModal')">✕</button>
+            </div>
+            <form onsubmit="submitLeave(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>تاريخ البداية</label>
+                        <input type="date" id="leaveStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label>تاريخ النهاية</label>
+                        <input type="date" id="leaveEnd" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>السبب</label>
+                        <textarea id="leaveReason" required placeholder="أذكر سبب الإجازة..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('leaveModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إرسال الطلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="taskTitle">تفاصل المهمة</h2>
+                <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
+            </div>
+            <div style="padding: 20px;">
+                <p id="taskDesc" style="color: #555; line-height: 1.6;"></p>
+                <div style="margin-top: 20px; display: flex; gap: 15px; font-size: 14px; color: #777;">
+                    <span>📅 مستحق في: <span id="taskDue" style="color: #333; font-weight: bold;"></span></span>
+                    <span>🚩 الأولوية: <span id="taskPriority" style="color: #333; font-weight: bold;"></span></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="completeTaskBtn" onclick="markTaskComplete()">✅ وضع علامة
+                    كمكتمل</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script>
+        let myEmployeeId = null;
+        let myCompanyId = null;
+        let openedTaskId = null;
+
+        async function initDashboard() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // 1. Get Employee Record linked to this User Email
+                // This is a heuristic: match user.email to employee.email
+                const employees = await api.getAll('employees');
+                const me = employees.find(e => e.email === user.email);
+
+                if (!me) {
+                    document.querySelector('.main-content').innerHTML = `
+                <div style="text-align:center; padding: 50px;">
+                    <h2>عذراً، لم يتم العثور على سجل وظيفي مرتبط ببريدك الإلكتروني.</h2>
+                    <p>يرجى التواصل مع مدير الموارد البشرية.</p>
+                </div>
+            `;
+                    return;
+                }
+
+                myEmployeeId = me.id;
+                myCompanyId = me.company_id;
+                document.getElementById('employeeTag').textContent = me.full_name;
+
+                loadMyStats();
+                loadMyTasks();
+                loadMyAttendance();
+                loadMyLeaves();
+
+            } catch (e) {
+                console.error("Dashboard Init Error", e);
+                showNotification("حدث خطأ في تحميل البيانات", "error");
+            }
+        }
+
+        async function loadMyTasks() {
+            const tasks = await api.getAll('tasks');
+            const myTasks = tasks.filter(t => t.assigned_to === myEmployeeId && t.status !== 'completed');
+
+            document.getElementById('pendingTasksCount').textContent = myTasks.length;
+            const list = document.getElementById('tasksList');
+
+            if (myTasks.length === 0) {
+                list.innerHTML = '<p class="empty-state">لا توجد مهام معلقة 🎉</p>';
+                return;
+            }
+
+            list.innerHTML = myTasks.map(t => `
+            <div class="task-item priority-${t.priority}" onclick="openTask('${t.id}')" style="cursor: pointer;">
+                <div>
+                   <div class="task-title">${t.title}</div>
+                   <div class="task-meta">📅 ${t.due_date || 'بدون تاريخ'}</div>
+                </div>
+                <div>
+                   <span class="badge status-pending">${t.priority}</span>
+                </div>
+            </div>
+        `).join('');
+
+            // Store tasks for modal access
+            window.currentTasks = myTasks;
+        }
+
+        function openTask(id) {
+            const task = window.currentTasks.find(t => t.id === id);
+            if (!task) return;
+
+            openedTaskId = id;
+            document.getElementById('taskTitle').textContent = task.title;
+            document.getElementById('taskDesc').textContent = task.description || 'لا يوجد وصف';
+            document.getElementById('taskDue').textContent = task.due_date || '-';
+            document.getElementById('taskPriority').textContent = task.priority;
+            openModal('taskModal');
+        }
+
+        async function markTaskComplete() {
+            if (!openedTaskId) return;
+            try {
+                await api.update('tasks', openedTaskId, { status: 'completed' });
+                showNotification('تم إنجاز المهمة! أحسنت 🌟');
+                closeModal('taskModal');
+                loadMyTasks();
+
+                // Update stats visually
+                const doneCount = document.getElementById('completedTasks');
+                doneCount.textContent = parseInt(doneCount.textContent) + 1;
+            } catch (e) {
+                showNotification('خطأ في تحديث المهمة', 'error');
+            }
+        }
+
+        async function loadMyAttendance() {
+            const allAtt = await api.getAll('attendance');
+            const myAtt = allAtt
+                .filter(a => a.employee_id === myEmployeeId)
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 5); // Last 5 records
+
+            const tbody = document.getElementById('attendanceList');
+            if (myAtt.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:#999;">لا توجد سجلات بعد</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = myAtt.map(a => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${new Date(a.date).toLocaleDateString('ar-EG')}</td>
+                <td style="padding: 10px; color: green;">${a.check_in ? a.check_in.split('T')[1].slice(0, 5) : '-'}</td>
+                <td style="padding: 10px; color: red;">${a.check_out ? a.check_out.split('T')[1].slice(0, 5) : '-'}</td>
+            </tr>
+        `).join('');
+        }
+
+        async function loadMyStats() {
+            // Simple client-side calc for demo
+            const allAtt = await api.getAll('attendance');
+            const myAtt = allAtt.filter(a => a.employee_id === myEmployeeId);
+
+            // This Month
+            const now = new Date();
+            const thisMonth = myAtt.filter(a => new Date(a.date).getMonth() === now.getMonth());
+
+            document.getElementById('daysPresent').textContent = thisMonth.filter(a => a.check_in).length;
+
+            const totalLate = thisMonth.reduce((sum, a) => sum + (a.late_minutes || 0), 0);
+            document.getElementById('lateMinutes').textContent = totalLate;
+
+            // Completed Tasks
+            const tasks = await api.getAll('tasks');
+            const completed = tasks.filter(t => t.assigned_to === myEmployeeId && t.status === 'completed');
+            document.getElementById('completedTasks').textContent = completed.length;
+        }
+
+        async function loadMyLeaves() {
+            const requests = await api.getAll('leave_requests'); // Need to ensure endpoint exists or mapped
+            // Note: If endpoint missing, this might fail. Assuming generic mapping.
+
+            if (!requests || !Array.isArray(requests)) return;
+
+            const myLeaves = requests.filter(r => r.employee_id === myEmployeeId);
+            const list = document.getElementById('leavesList');
+
+            if (myLeaves.length === 0) {
+                list.innerHTML = '<p class="empty-state">لا توجد طلبات إجازة.</p>';
+                return;
+            }
+
+            list.innerHTML = myLeaves.map(l => `
+            <div style="background: #f8fafc; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between;">
+               <div>
+                  <div style="font-weight: 500;">${l.reason || 'إجازة'}</div>
+                  <div style="font-size: 12px; color: #666;">${l.start_date} الى ${l.end_date}</div>
+               </div>
+               <span class="status-badge status-${l.status || 'pending'}">${l.status === 'approved' ? 'مقبولة' : l.status === 'rejected' ? 'مرفوضة' : 'قيد المراجعة'}</span>
+            </div>
+         `).join('');
+        }
+
+        async function submitLeave(e) {
+            e.preventDefault();
+
+            const data = {
+                company_id: myCompanyId,
+                employee_id: myEmployeeId,
+                start_date: document.getElementById('leaveStart').value,
+                end_date: document.getElementById('leaveEnd').value,
+                reason: document.getElementById('leaveReason').value,
+                status: 'pending'
+            };
+
+            try {
+                await api.create('leave_requests', data); // Check endpoint name
+                showNotification('تم إرسال طلب الإجازة بنجاح');
+                closeModal('leaveModal');
+                loadMyLeaves();
+            } catch (err) {
+                console.error(err);
+                showNotification('فشل إرسال الطلب', 'error');
+            }
+        }
+
+        // Auto-Run
+        checkAuth();
+        initDashboard();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدراء الشركات - نظام الموارد البشرية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .manager-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .manager-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.1rem;
+        }
+
+        .manager-meta {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .company-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header">
+            <div class="header-right">
+                <h1>إدارة المدراء</h1>
+                <p>إدارة حسابات مدراء الشركات (HR Managers)</p>
+            </div>
+            <div class="header-left">
+                <button class="btn btn-primary" onclick="openAddManagerModal()">
+                    <span><i class="fa-solid fa-user-plus"></i></span> إضافة مدير جديد
+                </button>
+            </div>
+        </header>
+
+        <!-- Managers List -->
+        <div id="managers-container">
+            <div class="loading-spinner">جاري التحميل...</div>
+        </div>
+    </main>
+
+    <!-- Add Manager Modal -->
+    <div class="modal-overlay" id="managerModal" onclick="closeModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>إضافة مدير شركة جديد</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <form id="managerForm" onsubmit="saveManager(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>الاسم الكامل</label>
+                        <input type="text" id="mgr-name" required placeholder="مثال: محمد أحمد">
+                    </div>
+                    <div class="form-group">
+                        <label>البريد الإلكتروني (تسجيل الدخول)</label>
+                        <input type="email" id="mgr-email" required placeholder="manager@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور</label>
+                        <input type="password" id="mgr-password" required minlength="6" placeholder="******">
+                    </div>
+                    <div class="form-group">
+                        <label>الشركة التابعة</label>
+                        <select id="mgr-company" required>
+                            <option value="">جاري تحميل الشركات...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ البيانات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script>
+        let companies = [];
+
+        async function loadManagers() {
+            const container = document.getElementById('managers-container');
+            const urlParams = new URLSearchParams(window.location.search);
+            const forcedCompanyId = urlParams.get('company_id');
+
+            try {
+                // 1. Fetch Users and Companies
+                const [users, comps] = await Promise.all([
+                    api.getAll('users'),
+                    api.getAll('companies')
+                ]);
+
+                companies = comps;
+                setupCompanySelect(forcedCompanyId);
+
+                // 2. Filter for HR Managers
+                // Assuming role is stored in user object. If not, we rely on what backend returns.
+                // Based on user_profiles schema, 'role' is a column.
+                let managers = users.filter(u => u.role === 'hr_manager' || u.role === 'company_admin');
+
+                // Filter by company if requested
+                if (forcedCompanyId) {
+                    managers = managers.filter(u => u.company_id === forcedCompanyId);
+                    // Update title
+                    const comp = companies.find(c => c.id === forcedCompanyId);
+                    if (comp) document.querySelector('.header-right p').textContent = `إدارة مدراء - ${comp.name}`;
+                }
+
+                if (managers.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">لا يوجد مدراء لهذة الشركة. قم بإضافة واحد جديد.</div>';
+                    // Auto open modal if specific company requested and empty
+                    if (forcedCompanyId) openAddManagerModal(forcedCompanyId);
+                    return;
+                }
+
+                container.innerHTML = managers.map(mgr => {
+                    const company = companies.find(c => c.id === mgr.company_id);
+                    const companyName = company ? company.name : 'غير محدد';
+
+                    return `
+            <div class="manager-card">
+              <div class="manager-info">
+                <h3>${mgr.full_name || 'بدون اسم'} <span class="company-badge">${companyName}</span></h3>
+                <div class="manager-meta">
+                  <i class="fa-regular fa-envelope"></i> ${mgr.email}
+                </div>
+              </div>
+              <div class="manager-actions">
+                <a href="/departments.html?company_id=${mgr.company_id}" class="btn btn-small secondary" style="text-decoration:none; margin-left:5px;">
+                  <i class="fa-solid fa-building"></i> الأقسام
+                </a>
+                <a href="/employees.html?company_id=${mgr.company_id}" class="btn btn-small secondary" style="text-decoration:none; margin-left:5px;">
+                  <i class="fa-solid fa-users"></i> الموظفين
+                </a>
+                <button class="btn btn-small danger" onclick="deleteManager('${mgr.id}')">
+                  <i class="fa-solid fa-trash"></i> حذف
+                </button>
+              </div>
+            </div>
+          `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading managers:', error);
+                container.innerHTML = `<div class="error-state">فشل تحميل البيانات: ${error.message}</div>`;
+            }
+        }
+
+        function setupCompanySelect(preselectId) {
+            const select = document.getElementById('mgr-company');
+            select.innerHTML = '<option value="">-- اختر الشركة --</option>' +
+                companies.map(c => `<option value="${c.id}" ${c.id === preselectId ? 'selected' : ''}>${c.name}</option>`).join('');
+
+            if (preselectId) select.disabled = true; // Lock selection if forced
+        }
+
+        function openAddManagerModal(companyId) {
+            document.getElementById('managerForm').reset();
+
+            if (companyId) {
+                const select = document.getElementById('mgr-company');
+                select.value = companyId;
+                // If options not loaded yet handled by setupCompanySelect, but here we cover manual opens
+            }
+
+            document.getElementById('managerModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('managerModal').classList.remove('show');
+        }
+
+        async function saveManager(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'جاري الحفظ...';
+
+            const data = {
+                full_name: document.getElementById('mgr-name').value,
+                email: document.getElementById('mgr-email').value,
+                password: document.getElementById('mgr-password').value,
+                company_id: document.getElementById('mgr-company').value,
+                role: 'hr_manager' // Hardcoded role
+            };
+
+            try {
+                await api.create('users', data);
+                showNotification('تم إنشاء حساب المدير بنجاح', 'success');
+                closeModal();
+                loadManagers();
+            } catch (error) {
+                console.error('Create manager error:', error);
+                alert('خطأ في الإنشاء: ' + (error.message || 'تأكد من عدم تكرار البريد الإلكتروني'));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'حفظ البيانات';
+            }
+        }
+
+        async function deleteManager(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا المدير؟ سيتم فقدان صلاحية الدخول.')) return;
+
+            try {
+                await api.delete('users', id);
+                showNotification('تم الحذف بنجاح', 'success');
+                loadManagers();
+            } catch (error) {
+                alert('فشل الحذف: ' + error.message);
+            }
+        }
+
+        // Initialize
+        loadManagers();
+    </script>
+</body>
+
+</html>

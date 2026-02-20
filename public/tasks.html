@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تعيين المهام - HR Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .kanban-column {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .column-header {
+            font-weight: 700;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        .assigned-to {
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .priority-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .priority-high {
+            background-color: #ef4444;
+        }
+
+        .priority-medium {
+            background-color: #f59e0b;
+        }
+
+        .priority-low {
+            background-color: #10b981;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-right">
+                <h1>إدارة المهام</h1>
+                <p>تعيين ومتابعة مهام الموظفين</p>
+            </div>
+            <div class="header-left">
+                <button class="btn btn-primary" onclick="openAddTaskModal()">
+                    <span><i class="fa-solid fa-plus"></i></span> مهمة جديدة
+                </button>
+            </div>
+        </header>
+
+        <div class="kanban-board">
+
+            <!-- Pending -->
+            <div class="kanban-column">
+                <div class="column-header" style="color: #ea580c; border-color: #ea580c;">
+                    📝 قيد الانتظار <span class="badge" id="count-pending">0</span>
+                </div>
+                <div id="col-pending"></div>
+            </div>
+
+            <!-- In Progress -->
+            <div class="kanban-column">
+                <div class="column-header" style="color: #2563eb; border-color: #2563eb;">
+                    ⏳ جاري العمل <span class="badge" id="count-inprogress">0</span>
+                </div>
+                <div id="col-inprogress"></div>
+            </div>
+
+            <!-- Completed -->
+            <div class="kanban-column">
+                <div class="column-header" style="color: #16a34a; border-color: #16a34a;">
+                    ✅ مكتملة <span class="badge" id="count-completed">0</span>
+                </div>
+                <div id="col-completed"></div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Add Task Modal -->
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">إضافة مهمة جديدة</h2>
+                <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
+            </div>
+            <form onsubmit="handleTaskSubmit(event)">
+                <input type="hidden" id="taskId">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>عنوان المهمة</label>
+                        <input type="text" id="title" required placeholder="مثال: مراجعة تقارير الشهر">
+                    </div>
+
+                    <div class="form-group">
+                        <label>تعيين إلى (الموظف)</label>
+                        <select id="assignedTo" required>
+                            <option value="">جار التحميل...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>تاريخ الاستحقاق</label>
+                        <input type="date" id="dueDate">
+                    </div>
+
+                    <div class="form-group">
+                        <label>الأولوية</label>
+                        <select id="priority">
+                            <option value="medium">متوسطة</option>
+                            <option value="high">عالية</option>
+                            <option value="low">منخفضة</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>الحالة</label>
+                        <select id="status">
+                            <option value="pending">قيد الانتظار</option>
+                            <option value="in_progress">جاري العمل</option>
+                            <option value="completed">مكتملة</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>الوصف</label>
+                        <textarea id="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('taskModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ المهمة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script>
+        let employees = [];
+        let tasks = [];
+        let currentCompanyId = null;
+
+        async function init() {
+            try {
+                // Get company context from logged-in user
+                currentCompanyId = getCompanyId();
+
+                // Load employees (filtered by company if available)
+                const empParams = currentCompanyId ? { company_id: currentCompanyId } : {};
+                employees = await api.getAll('employees', empParams) || [];
+                populateEmployeeSelect();
+
+                loadTasks();
+
+            } catch (e) {
+                console.error(e);
+                showNotification('خطأ في الاتصال بالخادم', 'error');
+            }
+        }
+
+        async function loadTasks() {
+            const params = currentCompanyId ? { company_id: currentCompanyId } : {};
+            const result = await api.getAll('tasks', params);
+            tasks = Array.isArray(result) ? result : [];
+
+            // Clear columns
+            document.getElementById('col-pending').innerHTML = '';
+            document.getElementById('col-inprogress').innerHTML = '';
+            document.getElementById('col-completed').innerHTML = '';
+
+            let counts = { pending: 0, in_progress: 0, completed: 0 };
+
+            tasks.forEach(task => {
+                // Use joined employee data if available, fallback to client-side lookup
+                const joinedEmp = task.employees;
+                const localEmp = employees.find(e => e.id === task.assigned_to);
+                const empName = joinedEmp?.full_name || localEmp?.full_name || 'غير محدد';
+
+                // Map task status to column ID (simple mapping)
+                let colId = 'col-pending';
+                if (task.status === 'in_progress') colId = 'col-inprogress';
+                if (task.status === 'completed') colId = 'col-completed';
+
+                // Increment count (rough mapping)
+                if (counts[task.status] !== undefined) counts[task.status]++;
+
+                const card = document.createElement('div');
+                card.className = 'task-card';
+                card.innerHTML = `
+                <div class="priority-badge priority-${task.priority}"></div>
+                <div class="task-title">${task.title}</div>
+                <div class="assigned-to">
+                    <i class="fa-solid fa-user"></i> ${empName}
+                </div>
+                <div style="font-size: 11px; color:#999; margin-top:5px;">
+                   📅 ${task.due_date || '-'}
+                </div>
+                <div class="action-row">
+                    <button class="btn-icon edit" onclick="editTask('${task.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon delete" onclick="deleteTask('${task.id}')"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `;
+
+                // Append to correct column
+                const container = document.getElementById(colId);
+                if (container) container.appendChild(card);
+            });
+
+            // Update badges
+            document.getElementById('count-pending').textContent = counts.pending;
+            document.getElementById('count-inprogress').textContent = counts.in_progress;
+            document.getElementById('count-completed').textContent = counts.completed;
+        }
+
+        function populateEmployeeSelect() {
+            const select = document.getElementById('assignedTo');
+            select.innerHTML = '<option value="">-- اختر موظف --</option>';
+            employees.forEach(e => {
+                select.innerHTML += `<option value="${e.id}">${e.full_name}</option>`;
+            });
+        }
+
+        function openAddTaskModal() {
+            document.getElementById('taskId').value = '';
+            document.getElementById('modalTitle').textContent = 'إضافة مهمة جديدة';
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('dueDate').value = '';
+            document.getElementById('assignedTo').value = '';
+            document.getElementById('priority').value = 'medium';
+            document.getElementById('status').value = 'pending';
+            openModal('taskModal');
+        }
+
+        function editTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('modalTitle').textContent = 'تعديل المهمة';
+            document.getElementById('title').value = task.title;
+            document.getElementById('description').value = task.description || '';
+            document.getElementById('dueDate').value = task.due_date;
+            document.getElementById('assignedTo').value = task.assigned_to;
+            document.getElementById('priority').value = task.priority;
+            document.getElementById('status').value = task.status;
+
+            openModal('taskModal');
+        }
+
+        async function handleTaskSubmit(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('taskId').value;
+            // Fetch User Profile ID if possible, or skip assigned_by for now (it's optional in schema if logic handled by backend, but here direct from frontend)
+            // We will skip assigned_by for simplicity unless we have auth running. 
+            // For MVP: assume manager context known by backend or just null.
+
+            const payload = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                assigned_to: document.getElementById('assignedTo').value,
+                due_date: document.getElementById('dueDate').value,
+                priority: document.getElementById('priority').value,
+                status: document.getElementById('status').value,
+                // company_id: ... needs to be current manager's company. 
+                // We assume backend fills this or we guess from employee's company.
+            };
+
+            // Infer Company ID from selected employee, fallback to currentCompanyId
+            const emp = employees.find(e => e.id === payload.assigned_to);
+            payload.company_id = emp?.company_id || currentCompanyId || undefined;
+
+            try {
+                if (id) {
+                    await api.update('tasks', id, payload);
+                    showNotification('تم تحديث المهمة');
+                } else {
+                    await api.create('tasks', payload);
+                    showNotification('تم إضافة المهمة');
+                }
+                closeModal('taskModal');
+                loadTasks();
+            } catch (err) {
+                console.error(err);
+                showNotification('فشل الحفظ: ' + err.message, 'error');
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('هل أنت متأكد من حذف هذه المهمة؟')) return;
+            try {
+                await api.delete('tasks', id);
+                showNotification('تم الحذف');
+                loadTasks();
+            } catch (err) {
+                showNotification('فشل الحذف', 'error');
+            }
+        }
+
+        // Init
+        checkAuth();
+        init();
+    </script>
+</body>
+
+</html>
