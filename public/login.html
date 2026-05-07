@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول - نظام الموارد البشرية</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .login-brand {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .login-brand h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .login-brand p {
+      font-size: 14px;
+      opacity: 0.9;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      color: white;
+    }
+
+    .feature {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .feature-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .login-form {
+      padding: 50px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .form-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .form-subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: 'Cairo', sans-serif;
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: #999;
+    }
+
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .form-checkbox input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+
+    .form-checkbox label {
+      margin: 0;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+
+    .forgot-password {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.3s;
+    }
+
+    .forgot-password:hover {
+      color: #764ba2;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      font-family: 'Cairo', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-login:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+      font-size: 13px;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .alert-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .dark-mode {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    }
+
+    .dark-mode .login-container {
+      background: #1a1a1a;
+    }
+
+    .dark-mode .login-form {
+      background: #1a1a1a;
+    }
+
+    .dark-mode .form-title,
+    .dark-mode .form-group label {
+      color: #fff;
+    }
+
+    .dark-mode .form-group input {
+      background: #2a2a2a;
+      color: #fff;
+      border-color: #444;
+    }
+
+    .dark-mode .form-subtitle {
+      color: #aaa;
+    }
+
+    @media (max-width: 768px) {
+      .login-container {
+        grid-template-columns: 1fr;
+      }
+
+      .login-brand {
+        padding: 30px 20px;
+      }
+
+      .login-form {
+        padding: 30px 20px;
+      }
+
+      .form-title {
+        font-size: 20px;
+      }
+
+      .features {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .feature {
+        flex: 1;
+        min-width: 100px;
+      }
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 20px;
+    }
+
+    .language-switcher {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: 'Cairo', sans-serif;
+    }
+
+    .dark-mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .dark-mode .dark-mode-toggle {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <button class="language-switcher" onclick="toggleLanguage()">EN</button>
+  <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌙</button>
+
+  <div class="login-container">
+    <!-- Brand Section -->
+    <div class="login-brand">
+      <h1>نظام الموارد البشرية</h1>
+      <p>منصة متكاملة لإدارة الموظفين والحضور والرواتب</p>
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">📊</span>
+          <span>تقارير متقدمة</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">👥</span>
+          <span>إدارة الموظفين</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🎯</span>
+          <span>تتبع الحضور</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">💼</span>
+          <span>إدارة الرواتب</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🔐</span>
+          <span>آمان عالي</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Form Section -->
+    <div class="login-form">
+      <h2 class="form-title">تسجيل الدخول</h2>
+      <p class="form-subtitle">أدخل بيانات الدخول الخاصة بك للوصول للنظام</p>
+
+      <div class="alert alert-error" id="errorAlert"></div>
+      <div class="alert alert-info" id="infoAlert"></div>
+
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>البريد الإلكتروني</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="أدخل البريد الإلكتروني"
+            required
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>كلمة المرور</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="أدخل كلمة المرور"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="form-checkbox">
+          <input type="checkbox" id="remember" />
+          <label for="remember">تذكرني</label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-login" id="loginBtn">
+            <span id="btnText">دخول</span>
+          </button>
+          <a href="#" class="forgot-password">نسيت كلمة المرور؟</a>
+        </div>
+      </form>
+
+      <div class="footer-note">
+        <p>نسخة تجريبية من نظام الموارد البشرية</p>
+        <p style="margin-top: 5px; font-size: 11px;">البريد: admin@demo.com | كلمة المرور: Demo@123456</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize dark mode from localStorage
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.body.classList.add('dark-mode');
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+
+    function toggleLanguage() {
+      // Save language preference and reload or apply translations
+      const currentLang = localStorage.getItem('language') || 'ar';
+      const newLang = currentLang === 'ar' ? 'en' : 'ar';
+      localStorage.setItem('language', newLang);
+      location.reload();
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const remember = document.getElementById('remember').checked;
+      const loginBtn = document.getElementById('loginBtn');
+      const btnText = document.getElementById('btnText');
+
+      // Show loading state
+      loginBtn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> جاري التحقق...';
+
+      try {
+        // Call authentication API
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'فشل تسجيل الدخول');
+        }
+
+        const data = await response.json();
+        const token = data.access_token || data.token;
+
+        if (remember) {
+          localStorage.setItem('supabase_token', token);
+        } else {
+          sessionStorage.setItem('supabase_token', token);
+        }
+
+        // Store token and decode to get user information
+        const decoded = decodeJWT(token);
+        
+        // Determine role from JWT or default
+        let role = decoded?.user_metadata?.role || decoded?.role || 'employee';
+        
+        // Map roles for consistency
+        const roleMap = {
+          'super_admin': 'super_admin',
+          'admin': 'admin',
+          'hr_manager': 'hr_manager', 
+          'company_admin': 'admin',
+          'employee': 'employee'
+        };
+        role = roleMap[role] || 'employee';
+
+        const emailLower = (email || '').toLowerCase();
+        if (!decoded?.user_metadata?.role && emailLower === 'admin@demo.com') {
+          role = 'super_admin';
+        }
+
+        // Store user profile in localStorage
+        const user = {
+          id: decoded?.sub,
+          email: email,
+          role: role,
+          company_id: role === 'super_admin' ? null : (decoded?.user_metadata?.company_id || null),
+          full_name: decoded?.user_metadata?.full_name || email
+        };
+        localStorage.setItem('user', JSON.stringify(user));
+
+        // Show success message
+        showAlert('تم تسجيل الدخول بنجاح!', 'info');
+
+        // Redirect based on role
+        setTimeout(() => {
+          if (role === 'super_admin') {
+            window.location.href = '/admin.html';
+          } else {
+            window.location.href = '/dashboard.html';
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Login error:', error);
+        showAlert(error.message || 'حدث خطأ في تسجيل الدخول', 'error');
+        loginBtn.disabled = false;
+        btnText.textContent = 'دخول';
+      }
+    }
+
+    function decodeJWT(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function showAlert(message, type) {
+      const errorAlert = document.getElementById('errorAlert');
+      const infoAlert = document.getElementById('infoAlert');
+
+      if (type === 'error') {
+        errorAlert.textContent = message;
+        errorAlert.classList.add('show');
+        infoAlert.classList.remove('show');
+        setTimeout(() => errorAlert.classList.remove('show'), 5000);
+      } else {
+        infoAlert.textContent = message;
+        infoAlert.classList.add('show');
+        errorAlert.classList.remove('show');
+        setTimeout(() => infoAlert.classList.remove('show'), 3000);
+      }
+    }
+
+    // Check if already logged in
+    window.addEventListener('load', () => {
+      const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+      if (token) {
+        const decoded = decodeJWT(token);
+        if (decoded && decoded.exp * 1000 > Date.now()) {
+          // Token is valid, redirect to appropriate page
+          const role = decoded?.user_metadata?.role || decoded?.role || 'employee';
+          const mappedRole = {
+            'super_admin': 'super_admin',
+            'admin': 'admin',
+            'hr_manager': 'hr_manager',
+            'company_admin': 'admin',
+            'employee': 'employee'
+          }[role] || 'employee';
+          
+          if (mappedRole === 'super_admin') {
+            window.location.href = '/admin.html';
+          } else {
+            window.location.href = '/dashboard.html';
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

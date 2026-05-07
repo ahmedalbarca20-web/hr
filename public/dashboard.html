@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - HR Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      border: 1px solid var(--border-color);
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 4px;
+      height: 100%;
+      border-radius: 0 16px 16px 0;
+    }
+
+    .stat-card.primary::after {
+      background: var(--primary);
+    }
+
+    .stat-card.success::after {
+      background: var(--success);
+    }
+
+    .stat-card.warning::after {
+      background: var(--warning);
+    }
+
+    .stat-card.info::after {
+      background: var(--secondary);
+    }
+
+    .stat-card.danger::after {
+      background: var(--danger);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .stat-card.primary .stat-icon {
+      background: rgba(14, 165, 233, 0.1);
+      color: var(--primary);
+    }
+
+    .stat-card.success .stat-icon {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+
+    .stat-card.warning .stat-icon {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+    }
+
+    .stat-card.info .stat-icon {
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--secondary);
+    }
+
+    .stat-trend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 20px;
+    }
+
+    .stat-trend.up {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+
+    .stat-trend.down {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    .stat-trend.neutral {
+      background: rgba(100, 116, 139, 0.1);
+      color: var(--text-secondary);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    .content-grid.equal {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    .card-body.no-padding {
+      padding: 0;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .quick-action {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 12px;
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: var(--text-primary);
+      background: var(--card-bg);
+    }
+
+    .quick-action:hover {
+      border-color: var(--primary);
+      background: rgba(14, 165, 233, 0.04);
+      transform: translateY(-2px);
+    }
+
+    .quick-action .qa-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: var(--body-bg);
+    }
+
+    .quick-action span {
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .activity-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.2s;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-item:hover {
+      background: rgba(14, 165, 233, 0.02);
+    }
+
+    .activity-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .activity-dot.blue {
+      background: var(--primary);
+    }
+
+    .activity-dot.green {
+      background: var(--success);
+    }
+
+    .activity-dot.orange {
+      background: var(--warning);
+    }
+
+    .activity-dot.red {
+      background: var(--danger);
+    }
+
+    .activity-dot.purple {
+      background: var(--secondary);
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-text {
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .activity-time {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .mini-table th {
+      text-align: right;
+      padding: 12px 24px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--body-bg);
+    }
+
+    .mini-table td {
+      padding: 14px 24px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .mini-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .mini-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: white;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    .health-score {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .health-ring {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 20px;
+    }
+
+    .health-ring canvas {
+      width: 160px !important;
+      height: 160px !important;
+    }
+
+    .health-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .health-value .score {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+    }
+
+    .health-value .label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .health-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .health-metric {
+      text-align: center;
+    }
+
+    .health-metric .metric-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .health-metric .metric-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .leave-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .leave-bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .leave-bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+
+    .leave-bar-header .type {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .leave-bar-header .count {
+      color: var(--text-secondary);
+    }
+
+    .leave-bar-track {
+      height: 8px;
+      background: var(--body-bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .leave-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .welcome-banner {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .welcome-text h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .welcome-text p {
+      opacity: 0.85;
+      font-size: 0.95rem;
+    }
+
+    .welcome-date {
+      text-align: left;
+      opacity: 0.9;
+    }
+
+    .welcome-date .date-day {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .welcome-date .date-month {
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 1400px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .content-grid,
+      .content-grid.equal {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        transform: translateX(100%);
+      }
+
+      .main-content {
+        margin-right: 0;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .welcome-banner {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h2><i class="fa-solid fa-hand" style="margin-left:8px;"></i> مرحباً بك في HR Pro</h2>
+        <p>إليك ملخص أداء شركتك اليوم</p>
+      </div>
+      <div class="welcome-date">
+        <div class="date-day" id="currentDay"></div>
+        <div class="date-month" id="currentMonth"></div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="stat-card primary">
+        <div class="stat-header">
+          <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+          <div class="stat-trend up" id="empTrend">--</div>
+        </div>
+        <div class="stat-value" id="totalEmployees">--</div>
+        <div class="stat-label">إجمالي الموظفين</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-header">
+          <div class="stat-icon"><i class="fa-solid fa-user-check"></i></div>
+          <div class="stat-trend up" id="presentTrend">--</div>
+        </div>
+        <div class="stat-value" id="presentToday">--</div>
+        <div class="stat-label">حاضرون اليوم</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-header">
+          <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+          <div class="stat-trend down" id="lateTrend">--</div>
+        </div>
+        <div class="stat-value" id="lateToday">--</div>
+        <div class="stat-label">متأخرون</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-header">
+          <div class="stat-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+          <div class="stat-trend neutral" id="leaveTrend">--</div>
+        </div>
+        <div class="stat-value" id="onLeave">--</div>
+        <div class="stat-label">في إجازة</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-header">
+          <div class="stat-icon"><i class="fa-solid fa-fingerprint"></i></div>
+          <div class="stat-trend neutral" id="deviceTrend">--</div>
+        </div>
+        <div class="stat-value" id="enabledDevices">--</div>
+        <div class="stat-label">أجهزة مفعلة</div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-chart-bar" style="margin-left:8px; color:var(--primary);"></i> الحضور الأسبوعي</h3>
+          <select class="filter-select" id="chartPeriod" style="min-width:auto; padding:8px 14px; font-size:0.8rem;">
+            <option value="week">هذا الأسبوع</option>
+            <option value="month">هذا الشهر</option>
+          </select>
+        </div>
+        <div class="card-body">
+          <div class="chart-container"><canvas id="attendanceChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-heart-pulse" style="margin-left:8px; color:var(--danger);"></i> HR Health Score</h3>
+        </div>
+        <div class="card-body">
+          <div class="health-score">
+            <div class="health-ring">
+              <canvas id="healthChart"></canvas>
+              <div class="health-value">
+                <div class="score" id="healthScore">--</div>
+                <div class="label">من 100</div>
+              </div>
+            </div>
+            <div class="health-metrics">
+              <div class="health-metric">
+                <div class="metric-value" id="metricAttendance">--%</div>
+                <div class="metric-label">نسبة الحضور</div>
+              </div>
+              <div class="health-metric">
+                <div class="metric-value" id="metricRetention">--%</div>
+                <div class="metric-label">الاستقرار</div>
+              </div>
+              <div class="health-metric">
+                <div class="metric-value" id="metricSatisfaction">--%</div>
+                <div class="metric-label">الرضا</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-bolt" style="margin-left:8px; color:var(--warning);"></i> إجراءات سريعة</h3>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <a href="/employees.html" class="quick-action">
+              <div class="qa-icon"><i class="fa-solid fa-user-plus"></i></div><span>إضافة موظف</span>
+            </a>
+            <a href="/attendance.html" class="quick-action">
+              <div class="qa-icon"><i class="fa-solid fa-clock"></i></div><span>تسجيل حضور</span>
+            </a>
+            <a href="/leave.html" class="quick-action">
+              <div class="qa-icon"><i class="fa-solid fa-calendar-days"></i></div><span>طلب إجازة</span>
+            </a>
+            <a href="/payroll.html" class="quick-action">
+              <div class="qa-icon"><i class="fa-solid fa-wallet"></i></div><span>المرتبات</span>
+            </a>
+            <a href="/departments.html" class="quick-action">
+              <div class="qa-icon"><i class="fa-solid fa-building"></i></div><span>الأقسام</span>
+            </a>
+            <a href="/devices.html" class="quick-action">
+              <div class="qa-icon"><i class="fa-solid fa-fingerprint"></i></div><span>أجهزة البصمة</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-bell" style="margin-left:8px; color:var(--warning);"></i> آخر الأنشطة</h3><a
+            href="#" style="font-size:0.8rem; color:var(--primary); text-decoration:none;">عرض الكل</a>
+        </div>
+        <div class="card-body no-padding">
+          <ul class="activity-list" id="activityList">
+            <li class="activity-item">
+              <div class="activity-dot blue"></div>
+              <div class="activity-content">
+                <div class="activity-text">جاري تحميل البيانات...</div>
+                <div class="activity-time">--</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid equal">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-users" style="margin-left:8px; color:var(--primary);"></i> أحدث الموظفين</h3><a
+            href="/employees.html" style="font-size:0.8rem; color:var(--primary); text-decoration:none;">عرض الكل ←</a>
+        </div>
+        <div class="card-body no-padding">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>الموظف</th>
+                <th>القسم</th>
+                <th>الحالة</th>
+                <th>تاريخ التعيين</th>
+              </tr>
+            </thead>
+            <tbody id="employeesTableBody">
+              <tr>
+                <td colspan="4" style="text-align:center; padding:40px; color:var(--text-secondary);">جاري التحميل...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-clipboard-list" style="margin-left:8px; color:var(--secondary);"></i> ملخص الإجازات
+          </h3><a href="/leave.html" style="font-size:0.8rem; color:var(--primary); text-decoration:none;">إدارة ←</a>
+        </div>
+        <div class="card-body">
+          <div class="leave-bars" id="leaveBars">
+            <div class="leave-bar-item">
+              <div class="leave-bar-header"><span class="type">جاري التحميل...</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid equal" style="margin-top: 0;">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-building" style="margin-left:8px; color:var(--info);"></i> توزيع الأقسام</h3>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 250px;"><canvas id="deptChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-wallet" style="margin-left:8px; color:var(--success);"></i> ملخص المرتبات</h3><a
+            href="/payroll.html" style="font-size:0.8rem; color:var(--primary); text-decoration:none;">التفاصيل ←</a>
+        </div>
+        <div class="card-body">
+          <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0;">
+            <div class="stat-card primary" style="padding:16px;">
+              <div class="stat-value" style="font-size:1.4rem;" id="totalPayroll">--</div>
+              <div class="stat-label">إجمالي المرتبات</div>
+            </div>
+            <div class="stat-card success" style="padding:16px;">
+              <div class="stat-value" style="font-size:1.4rem;" id="avgSalary">--</div>
+              <div class="stat-label">متوسط الراتب</div>
+            </div>
+            <div class="stat-card warning" style="padding:16px;">
+              <div class="stat-value" style="font-size:1.4rem;" id="paidCount">--</div>
+              <div class="stat-label">تم الدفع</div>
+            </div>
+            <div class="stat-card danger" style="padding:16px;">
+              <div class="stat-value" style="font-size:1.4rem;" id="pendingPayroll">--</div>
+              <div class="stat-label">معلّق</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script>
+    const token = checkAuth();
+    const now = new Date();
+    const _s = getAppSettings();
+    const isEn = _s.language === 'en';
+    const t = (value) => translateString(value);
+    const _locale = _s.language === 'en' ? 'en-US' : 'ar-IQ';
+    const dayNamesAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNames = _s.language === 'en' ? dayNamesEn : dayNamesAr;
+    document.getElementById('currentDay').textContent = now.getDate();
+    document.getElementById('currentMonth').textContent = `${now.toLocaleDateString(_locale, { month: 'long', year: 'numeric', timeZone: _s.timezone || 'Asia/Baghdad' })} • ${dayNames[now.getDay()]}`;
+
+    let attendanceChart, healthChart, deptChart;
+    const avatarColors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#3b82f6'];
+    function getColor(name) { return avatarColors[name ? name.charCodeAt(0) % avatarColors.length : 0]; }
+    function getInit(name) { if (!name) return '?'; return name.split(' ').map(n => n[0]).join('').substring(0, 2); }
+
+    async function loadDashboard() {
+      try {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const [empRes, attendRes, leaveRes, deptRes, payrollRes, deviceStatsRes] = await Promise.all([
+          fetch('/api/employees', { headers }).then(r => r.json()),
+          fetch('/api/attendance', { headers }).then(r => r.json()),
+          fetch('/api/leave', { headers }).then(r => r.json()),
+          fetch('/api/departments', { headers }).then(r => r.json()),
+          fetch('/api/payroll', { headers }).then(r => r.json()),
+          fetch('/api/devices/stats', { headers }).then(r => r.json()),
+        ]);
+        const employees = Array.isArray(empRes) ? empRes : (empRes.data || empRes || []);
+        const attendance = Array.isArray(attendRes) ? attendRes : (attendRes.data || attendRes || []);
+        const leaves = Array.isArray(leaveRes) ? leaveRes : (leaveRes.data || leaveRes || []);
+        const departments = Array.isArray(deptRes) ? deptRes : (deptRes.data || deptRes || []);
+        const payroll = Array.isArray(payrollRes) ? payrollRes : (payrollRes.data || payrollRes || []);
+
+        updateStats(employees, attendance, leaves, deviceStatsRes);
+        updateEmployeesTable(employees, departments);
+        updateAttendanceChart(attendance);
+        updateHealthScore(employees, attendance, leaves);
+        updateDeptChart(employees, departments);
+        updateLeaveOverview(leaves);
+        updateActivities(employees, attendance, leaves);
+        updatePayrollSummary(employees, payroll);
+      } catch (e) { console.error('Dashboard error:', e); }
+    }
+
+    function updateStats(employees, attendance, leaves, deviceStats) {
+      const today = new Date().toISOString().split('T')[0];
+      const todayAtt = attendance.filter(a => a.date === today);
+      const active = employees.filter(e => e.status === 'active');
+      const present = todayAtt.filter(a => a.status === 'present' || a.check_in).length;
+      const late = todayAtt.filter(a => a.status === 'late' || a.late_minutes > 0).length;
+      const onLeave = leaves.filter(l => l.status === 'approved' && new Date(l.start_date) <= new Date(today) && new Date(l.end_date) >= new Date(today)).length;
+      const enabledDevices = Number(deviceStats?.enabled_devices || 0);
+      const avgSync = Number(deviceStats?.avg_sync_interval_minutes || 0);
+      document.getElementById('totalEmployees').textContent = active.length;
+      document.getElementById('presentToday').textContent = present;
+      document.getElementById('lateToday').textContent = late;
+      document.getElementById('onLeave').textContent = onLeave;
+      document.getElementById('enabledDevices').textContent = enabledDevices;
+      const rate = active.length > 0 ? Math.round((present / active.length) * 100) : 0;
+      document.getElementById('empTrend').textContent = `${active.length} ${t('نشط')}`;
+      document.getElementById('presentTrend').textContent = `${rate}%`;
+      document.getElementById('lateTrend').textContent = late > 0 ? `${late} ${t('شخص')}` : `✓ ${t('لا يوجد')}`;
+      document.getElementById('leaveTrend').textContent = `${leaves.filter(l => l.status === 'pending').length} ${t('معلق')}`;
+      document.getElementById('deviceTrend').textContent = avgSync > 0 ? `${avgSync} ${t('دقيقة')}` : `${t('غير محدد')}`;
+    }
+
+    function updateEmployeesTable(employees, departments) {
+      const tbody = document.getElementById('employeesTableBody');
+      const latest = employees.slice(-5).reverse();
+      if (!latest.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-secondary)">${t('لا يوجد موظفين')}</td></tr>`; return; }
+      tbody.innerHTML = latest.map(emp => {
+        const dept = departments.find(d => d.id === emp.department_id);
+        return `<tr><td><span class="mini-avatar" style="background:${getColor(emp.full_name)}">${getInit(emp.full_name)}</span>${emp.full_name}</td><td>${dept?.name || '-'}</td><td><span class="status-badge ${emp.status === 'active' ? 'active' : 'inactive'}">${emp.status === 'active' ? t('نشط') : t('غير نشط')}</span></td><td>${emp.hire_date ? formatDate(emp.hire_date) : '-'}</td></tr>`;
+      }).join('');
+    }
+
+    function updateAttendanceChart(attendance) {
+      const ctx = document.getElementById('attendanceChart').getContext('2d');
+      const labels = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'].map(t);
+      const presentData = [0, 0, 0, 0, 0], lateData = [0, 0, 0, 0, 0];
+      attendance.forEach(r => { const d = new Date(r.date).getDay(); if (d >= 0 && d <= 4) { if (r.status === 'late' || r.late_minutes > 0) lateData[d]++; else if (r.check_in) presentData[d]++; } });
+      if (attendanceChart) attendanceChart.destroy();
+      attendanceChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: t('حاضر'), data: presentData, backgroundColor: 'rgba(14,165,233,0.8)', borderRadius: 6, borderSkipped: false }, { label: t('متأخر'), data: lateData, backgroundColor: 'rgba(245,158,11,0.8)', borderRadius: 6, borderSkipped: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'start', labels: { font: { family: 'Cairo', size: 12 }, padding: 20, usePointStyle: true, pointStyleWidth: 10 } } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'Cairo', size: 12 } } }, y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { family: 'Cairo', size: 12 }, stepSize: 1 } } } } });
+    }
+
+    function updateHealthScore(employees, attendance, leaves) {
+      const active = employees.filter(e => e.status === 'active').length;
+      const total = employees.length;
+      const today = new Date().toISOString().split('T')[0];
+      const todayAtt = attendance.filter(a => a.date === today);
+      const attRate = active > 0 ? Math.round((todayAtt.length / active) * 100) : 85;
+      const retRate = total > 0 ? Math.round((active / total) * 100) : 90;
+      const satRate = Math.min(100, Math.round(((retRate + attRate) / 2) * 1.05));
+      const score = Math.round(attRate * 0.4 + retRate * 0.35 + satRate * 0.25);
+      document.getElementById('healthScore').textContent = score || 85;
+      document.getElementById('metricAttendance').textContent = (attRate || 85) + '%';
+      document.getElementById('metricRetention').textContent = (retRate || 90) + '%';
+      document.getElementById('metricSatisfaction').textContent = (satRate || 88) + '%';
+      const ctx = document.getElementById('healthChart').getContext('2d');
+      if (healthChart) healthChart.destroy();
+      const s = score || 85;
+      healthChart = new Chart(ctx, { type: 'doughnut', data: { datasets: [{ data: [s, 100 - s], backgroundColor: ['#0ea5e9', '#f0f4f8'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '78%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, rotation: -90, circumference: 360 } });
+    }
+
+    function updateDeptChart(employees, departments) {
+      const ctx = document.getElementById('deptChart').getContext('2d');
+      const counts = {};
+      employees.forEach(e => { const d = departments.find(dd => dd.id === e.department_id); const n = d?.name || t('بدون قسم'); counts[n] = (counts[n] || 0) + 1; });
+      const labels = Object.keys(counts), data = Object.values(counts);
+      const colors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4'];
+      if (deptChart) deptChart.destroy();
+      deptChart = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo', size: 12 }, padding: 16, usePointStyle: true } } } } });
+    }
+
+    function updateLeaveOverview(leaves) {
+      const c = document.getElementById('leaveBars');
+      const types = { annual: { name: t('سنوية'), color: '#0ea5e9', max: 21 }, sick: { name: t('مرضية'), color: '#f59e0b', max: 30 }, personal: { name: t('شخصية'), color: '#8b5cf6', max: 5 }, emergency: { name: t('طارئة'), color: '#ef4444', max: 5 } };
+      const counts = {}; leaves.forEach(l => { const t = l.leave_type || 'annual'; counts[t] = (counts[t] || 0) + 1; });
+      const pending = leaves.filter(l => l.status === 'pending').length;
+      const approved = leaves.filter(l => l.status === 'approved').length;
+      let h = `<div class="leave-bar-item"><div class="leave-bar-header"><span class="type">${t('طلبات معلقة')}</span><span class="count">${pending}</span></div><div class="leave-bar-track"><div class="leave-bar-fill" style="width:${Math.min(100, pending * 20)}%;background:#f59e0b;"></div></div></div><div class="leave-bar-item"><div class="leave-bar-header"><span class="type">${t('طلبات مقبولة')}</span><span class="count">${approved}</span></div><div class="leave-bar-track"><div class="leave-bar-fill" style="width:${Math.min(100, approved * 10)}%;background:#10b981;"></div></div></div>`;
+      Object.entries(types).forEach(([k, info]) => { const u = counts[k] || 0; const p = Math.min(100, Math.round((u / info.max) * 100)); h += `<div class="leave-bar-item"><div class="leave-bar-header"><span class="type">${info.name}</span><span class="count">${u} / ${info.max}</span></div><div class="leave-bar-track"><div class="leave-bar-fill" style="width:${p}%;background:${info.color};"></div></div></div>`; });
+      c.innerHTML = h;
+    }
+
+    function updateActivities(employees, attendance, leaves) {
+      const acts = [];
+      employees.slice(-3).reverse().forEach(e => acts.push({ text: `${t('تم إضافة الموظف')} <strong>${e.full_name}</strong>`, time: e.created_at ? timeAgo(e.created_at) : t('مؤخراً'), color: 'blue' }));
+      leaves.slice(-3).reverse().forEach(l => { const e = employees.find(ee => ee.id === l.employee_id); const st = l.status === 'pending' ? t('طلب إجازة جديد') : l.status === 'approved' ? t('تمت الموافقة على إجازة') : t('تم رفض إجازة'); const cl = l.status === 'pending' ? 'orange' : l.status === 'approved' ? 'green' : 'red'; acts.push({ text: `${st} - <strong>${e?.full_name || t('موظف')}</strong>`, time: l.created_at ? timeAgo(l.created_at) : t('مؤخراً'), color: cl }); });
+      const list = document.getElementById('activityList');
+      const items = acts.slice(0, 6);
+      if (!items.length) { list.innerHTML = `<li class="activity-item"><div class="activity-dot blue"></div><div class="activity-content"><div class="activity-text">${t('لا توجد أنشطة حديثة')}</div><div class="activity-time">${t('ابدأ بإضافة موظفين')}</div></div></li>`; return; }
+      list.innerHTML = items.map(a => `<li class="activity-item"><div class="activity-dot ${a.color}"></div><div class="activity-content"><div class="activity-text">${a.text}</div><div class="activity-time">${a.time}</div></div></li>`).join('');
+    }
+
+    function updatePayrollSummary(employees, payroll) {
+      const active = employees.filter(e => e.status === 'active' && e.salary);
+      const total = active.reduce((s, e) => s + (Number(e.salary) || 0), 0);
+      const avg = active.length > 0 ? Math.round(total / active.length) : 0;
+      const paid = payroll.filter(p => p.status === 'paid').length;
+      const pending = payroll.filter(p => p.status === 'pending' || !p.status).length;
+      document.getElementById('totalPayroll').textContent = fmtMoney(total);
+      document.getElementById('avgSalary').textContent = fmtMoney(avg);
+      document.getElementById('paidCount').textContent = paid;
+      document.getElementById('pendingPayroll').textContent = pending || active.length;
+    }
+
+    function fmtMoney(a) { if (a >= 1e6) return (a / 1e6).toFixed(1) + 'M'; if (a >= 1e3) return (a / 1e3).toFixed(1) + 'K'; return a.toString(); }
+    function timeAgo(d) { const now = new Date(), date = new Date(d), diff = Math.floor((now - date) / 1000); if (diff < 60) return isEn ? 'Just now' : 'الآن'; if (diff < 3600) return isEn ? `${Math.floor(diff / 60)} min ago` : `منذ ${Math.floor(diff / 60)} دقيقة`; if (diff < 86400) return isEn ? `${Math.floor(diff / 3600)} hr ago` : `منذ ${Math.floor(diff / 3600)} ساعة`; if (diff < 604800) return isEn ? `${Math.floor(diff / 86400)} day ago` : `منذ ${Math.floor(diff / 86400)} يوم`; return formatDate(d); }
+
+    loadDashboard();
+  </script>
+</body>
+
+</html>

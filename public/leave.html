@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الإجازات - HR Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="header">
+      <div class="header-right">
+        <h1>إدارة الإجازات</h1>
+        <p>متابعة طلبات الإجازات والموافقات</p>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <span><i class="fa-solid fa-plus"></i></span> طلب إجازة
+      </button>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card warning">
+        <div class="stat-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="stat-value" id="pendingCount">0</div>
+        <div class="stat-label">بانتظار الموافقة</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-value" id="approvedCount">0</div>
+        <div class="stat-label">موافق عليها</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+        <div class="stat-value" id="rejectedCount">0</div>
+        <div class="stat-label">مرفوضة</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-icon"><i class="fa-solid fa-calendar-days"></i></div>
+        <div class="stat-value" id="totalDays">0</div>
+        <div class="stat-label">إجمالي الأيام</div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="البحث عن موظف..." oninput="handleSearch()">
+      </div>
+      <select class="filter-select" id="typeFilter" onchange="handleFilter()">
+        <option value="">جميع الأنواع</option>
+        <option value="annual">سنوية</option>
+        <option value="sick">مرضية</option>
+        <option value="emergency">طارئة</option>
+        <option value="unpaid">بدون راتب</option>
+      </select>
+      <select class="filter-select" id="statusFilter" onchange="handleFilter()">
+        <option value="">جميع الحالات</option>
+        <option value="pending">بانتظار الموافقة</option>
+        <option value="approved">موافق عليها</option>
+        <option value="rejected">مرفوضة</option>
+      </select>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>الموظف</th>
+            <th>نوع الإجازة</th>
+            <th>من</th>
+            <th>إلى</th>
+            <th>عدد الأيام</th>
+            <th>السبب</th>
+            <th>الحالة</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="8" class="loading-cell">جاري التحميل...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="leaveModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">طلب إجازة جديد</h2>
+        <button class="modal-close" onclick="closeModal('leaveModal')">✕</button>
+      </div>
+      <form onsubmit="handleSubmit(event)">
+        <input type="hidden" id="leaveId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>الموظف</label>
+            <select id="employeeId" required>
+              <option value="">-- اختر الموظف --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>نوع الإجازة</label>
+            <select id="leaveType" required>
+              <option value="annual">سنوية</option>
+              <option value="sick">مرضية</option>
+              <option value="emergency">طارئة</option>
+              <option value="unpaid">بدون راتب</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>من تاريخ</label>
+            <input type="date" id="startDate" required onchange="calculateDays()">
+          </div>
+          <div class="form-group">
+            <label>إلى تاريخ</label>
+            <input type="date" id="endDate" required onchange="calculateDays()">
+          </div>
+          <div class="form-group">
+            <label>عدد الأيام</label>
+            <input type="number" id="days" readonly>
+          </div>
+          <div class="form-group">
+            <label>الحالة</label>
+            <select id="status">
+              <option value="pending">بانتظار الموافقة</option>
+              <option value="approved">موافق عليها</option>
+              <option value="rejected">مرفوضة</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>السبب</label>
+            <textarea id="reason" placeholder="سبب طلب الإجازة..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('leaveModal')">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script>
+    let leaves = [];
+    let employees = [];
+
+    // Load data
+    async function loadData() {
+      try {
+        [leaves, employees] = await Promise.all([
+          api.getAll('leave'),
+          api.getAll('employees')
+        ]);
+        renderTable();
+        populateEmployeeSelect();
+        updateStats();
+      } catch (error) {
+        showNotification('حدث خطأ في تحميل البيانات', 'error');
+      }
+    }
+
+    // Update stats
+    function updateStats() {
+      document.getElementById('pendingCount').textContent = leaves.filter(l => l.status === 'pending').length;
+      document.getElementById('approvedCount').textContent = leaves.filter(l => l.status === 'approved').length;
+      document.getElementById('rejectedCount').textContent = leaves.filter(l => l.status === 'rejected').length;
+      document.getElementById('totalDays').textContent = leaves.reduce((sum, l) => sum + (parseInt(l.days) || 0), 0);
+    }
+
+    // Populate employee select
+    function populateEmployeeSelect() {
+      const select = document.getElementById('employeeId');
+      select.innerHTML = '<option value="">-- اختر الموظف --</option>';
+      employees.forEach(emp => {
+        select.innerHTML += `<option value="${emp.id}">${emp.full_name}</option>`;
+      });
+    }
+
+    // Calculate days between dates
+    function calculateDays() {
+      const start = new Date(document.getElementById('startDate').value);
+      const end = new Date(document.getElementById('endDate').value);
+      if (start && end && end >= start) {
+        const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        document.getElementById('days').value = diff;
+      }
+    }
+
+    // Get leave type display
+    function getLeaveTypeDisplay(type) {
+      const map = {
+        'annual': 'سنوية',
+        'sick': 'مرضية',
+        'emergency': 'طارئة',
+        'unpaid': 'بدون راتب'
+      };
+      return map[type] || type;
+    }
+
+    // Get status display
+    function getStatusDisplay(status) {
+      const map = {
+        'pending': { text: 'بانتظار الموافقة', class: 'pending' },
+        'approved': { text: 'موافق عليها', class: 'approved' },
+        'rejected': { text: 'مرفوضة', class: 'absent' }
+      };
+      return map[status] || { text: status, class: '' };
+    }
+
+    // Render table
+    function renderTable(data = leaves) {
+      const tbody = document.getElementById('tableBody');
+
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">لا توجد طلبات إجازات</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(record => {
+        const employee = employees.find(e => e.id === record.employee_id);
+        const status = getStatusDisplay(record.status);
+
+        return `
+          <tr>
+            <td>
+              <div class="employee-cell">
+                <div class="employee-avatar" style="background: ${getAvatarColor(employee?.full_name || '')}">
+                  ${getInitials(employee?.full_name)}
+                </div>
+                <span>${employee?.full_name || '-'}</span>
+              </div>
+            </td>
+            <td>${getLeaveTypeDisplay(record.leave_type)}</td>
+            <td>${formatDate(record.start_date)}</td>
+            <td>${formatDate(record.end_date)}</td>
+            <td>${record.days || '-'} يوم</td>
+            <td>${record.reason || '-'}</td>
+            <td><span class="status-badge ${status.class}">${status.text}</span></td>
+            <td>
+              <div class="action-btns">
+                ${record.status === 'pending' ? `
+                  <button class="btn-icon" style="color: var(--success)" onclick="updateStatus('${record.id}', 'approved')"><i class="fa-solid fa-check"></i></button>
+                  <button class="btn-icon" style="color: var(--danger)" onclick="updateStatus('${record.id}', 'rejected')"><i class="fa-solid fa-xmark"></i></button>
+                ` : ''}
+                <button class="btn-icon edit" onclick="editRecord('${record.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-icon delete" onclick="deleteRecord('${record.id}')"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Update status (approve/reject)
+    async function updateStatus(id, status) {
+      try {
+        await api.update('leave', id, { status });
+        showNotification(status === 'approved' ? 'تمت الموافقة على الإجازة' : 'تم رفض الإجازة');
+        loadData();
+      } catch (error) {
+        showNotification('حدث خطأ: ' + error.message, 'error');
+      }
+    }
+
+    // Search & Filter
+    function handleSearch() {
+      handleFilter();
+    }
+
+    function handleFilter() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const type = document.getElementById('typeFilter').value;
+      const status = document.getElementById('statusFilter').value;
+
+      let filtered = leaves;
+
+      if (query) {
+        filtered = filtered.filter(l => {
+          const emp = employees.find(e => e.id === l.employee_id);
+          return emp?.full_name?.toLowerCase().includes(query);
+        });
+      }
+
+      if (type) {
+        filtered = filtered.filter(l => l.leave_type === type);
+      }
+
+      if (status) {
+        filtered = filtered.filter(l => l.status === status);
+      }
+
+      renderTable(filtered);
+    }
+
+    // Open add modal
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = 'طلب إجازة جديد';
+      document.getElementById('leaveId').value = '';
+      document.getElementById('employeeId').value = '';
+      document.getElementById('leaveType').value = 'annual';
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('days').value = '';
+      document.getElementById('status').value = 'pending';
+      document.getElementById('reason').value = '';
+      openModal('leaveModal');
+    }
+
+    // Edit
+    function editRecord(id) {
+      const record = leaves.find(l => l.id === id);
+      if (!record) return;
+
+      document.getElementById('modalTitle').textContent = 'تعديل طلب الإجازة';
+      document.getElementById('leaveId').value = record.id;
+      document.getElementById('employeeId').value = record.employee_id || '';
+      document.getElementById('leaveType').value = record.leave_type || 'annual';
+      document.getElementById('startDate').value = record.start_date?.split('T')[0] || '';
+      document.getElementById('endDate').value = record.end_date?.split('T')[0] || '';
+      document.getElementById('days').value = record.days || '';
+      document.getElementById('status').value = record.status || 'pending';
+      document.getElementById('reason').value = record.reason || '';
+      openModal('leaveModal');
+    }
+
+    // Submit
+    async function handleSubmit(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('leaveId').value;
+      const data = {
+        employee_id: document.getElementById('employeeId').value,
+        leave_type: document.getElementById('leaveType').value,
+        start_date: document.getElementById('startDate').value,
+        end_date: document.getElementById('endDate').value,
+        days: parseInt(document.getElementById('days').value) || 0,
+        status: document.getElementById('status').value,
+        reason: document.getElementById('reason').value,
+        company_id: '00000000-0000-0000-0000-000000000001'
+      };
+
+      try {
+        if (id) {
+          await api.update('leave', id, data);
+          showNotification('تم تحديث طلب الإجازة بنجاح');
+        } else {
+          await api.create('leave', data);
+          showNotification('تم تقديم طلب الإجازة بنجاح');
+        }
+        closeModal('leaveModal');
+        loadData();
+      } catch (error) {
+        showNotification('حدث خطأ: ' + error.message, 'error');
+      }
+    }
+
+    // Delete
+    async function deleteRecord(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+
+      try {
+        await api.delete('leave', id);
+        showNotification('تم حذف الطلب بنجاح');
+        loadData();
+      } catch (error) {
+        showNotification('حدث خطأ: ' + error.message, 'error');
+      }
+    }
+
+    // Init
+    checkAuth();
+    loadData();
+  </script>
+</body>
+
+</html>

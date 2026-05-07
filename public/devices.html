@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أجهزة البصمة - HR Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <header class="header">
+      <div class="header-right">
+        <h1>أجهزة البصمة</h1>
+        <p>إدارة أجهزة البصمة ZKTeco و FingerTec</p>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <span><i class="fa-solid fa-plus"></i></span> إضافة جهاز
+      </button>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card success">
+        <div class="stat-icon"><i class="fa-solid fa-wifi"></i></div>
+        <div class="stat-value" id="onlineCount">0</div>
+        <div class="stat-label">متصل</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-icon"><i class="fa-solid fa-wifi" style="opacity:0.5;"></i></div>
+        <div class="stat-value" id="offlineCount">0</div>
+        <div class="stat-label">غير متصل</div>
+      </div>
+      <div class="stat-card primary">
+        <div class="stat-icon"><i class="fa-solid fa-fingerprint"></i></div>
+        <div class="stat-value" id="totalDevices">0</div>
+        <div class="stat-label">إجمالي الأجهزة</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-icon"><i class="fa-solid fa-rotate"></i></div>
+        <div class="stat-value" id="lastSync">-</div>
+        <div class="stat-label">آخر مزامنة</div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="البحث عن جهاز..." oninput="handleSearch()">
+      </div>
+      <select class="filter-select" id="typeFilter" onchange="handleFilter()">
+        <option value="">جميع الأنواع</option>
+        <option value="zkteco">ZKTeco</option>
+        <option value="fingertec">FingerTec</option>
+      </select>
+      <select class="filter-select" id="statusFilter" onchange="handleFilter()">
+        <option value="">جميع الحالات</option>
+        <option value="online">متصل</option>
+        <option value="offline">غير متصل</option>
+      </select>
+      <button class="btn btn-secondary" onclick="syncAllDevices()">
+        <span><i class="fa-solid fa-rotate"></i></span> مزامنة الكل
+      </button>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>الجهاز</th>
+            <th>النوع</th>
+            <th>عنوان IP</th>
+            <th>المنفذ</th>
+            <th>الموقع</th>
+            <th>الحالة</th>
+            <th>آخر اتصال</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="8" class="loading-cell">جاري التحميل...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="deviceModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">إضافة جهاز جديد</h2>
+        <button class="modal-close" onclick="closeModal('deviceModal')">✕</button>
+      </div>
+      <form onsubmit="handleSubmit(event)">
+        <input type="hidden" id="deviceId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>اسم الجهاز</label>
+            <input type="text" id="name" required placeholder="مثال: جهاز البوابة الرئيسية">
+          </div>
+          <div class="form-group">
+            <label>نوع الجهاز</label>
+            <select id="deviceType" required>
+              <option value="zkteco">ZKTeco</option>
+              <option value="fingertec">FingerTec</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>عنوان IP</label>
+            <input type="text" id="ipAddress" required placeholder="192.168.1.100">
+          </div>
+          <div class="form-group">
+            <label>المنفذ</label>
+            <input type="number" id="port" value="4370" required>
+          </div>
+          <div class="form-group">
+            <label>رمز الاتصال (Comm Key)</label>
+            <div style="display:flex; gap:10px;">
+              <input type="text" id="commKey" placeholder="0" value="0" style="flex:1;">
+              <button type="button" class="btn btn-secondary" onclick="testConnectionModal()"
+                title="اختبار واسترجاع المعلومات">
+                <i class="fa-solid fa-plug"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>الرقم التسلسلي</label>
+            <input type="text" id="serialNumber" placeholder="Serial Number">
+          </div>
+          <div class="form-group">
+            <label>الموقع</label>
+            <input type="text" id="location" placeholder="مثال: المبنى الرئيسي - البوابة">
+          </div>
+          <div class="form-group full-width">
+            <label>ملاحظات</label>
+            <textarea id="notes" placeholder="أي ملاحظات إضافية..."></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label>إعدادات الجهاز</label>
+            <div class="form-grid" style="margin-top: 10px;">
+              <div class="form-group">
+                <label>المنطقة الزمنية</label>
+                <input type="text" id="deviceTimezone" value="Asia/Baghdad">
+              </div>
+              <div class="form-group">
+                <label>فاصل المزامنة (دقيقة)</label>
+                <input type="number" id="syncInterval" value="5" min="1">
+              </div>
+              <div class="form-group">
+                <label>عدد المحاولات</label>
+                <input type="number" id="retryCount" value="3" min="0">
+              </div>
+              <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+                <input type="checkbox" id="deviceEnabled" checked>
+                <label for="deviceEnabled" style="margin:0;">مفعل</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('deviceModal')">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script>
+    let devices = [];
+
+    // Load data
+    async function loadData() {
+      try {
+        devices = await api.getAll('devices');
+        renderTable();
+        updateStats();
+      } catch (error) {
+        showNotification('حدث خطأ في تحميل البيانات', 'error');
+      }
+    }
+
+    // Update stats
+    function updateStats() {
+      const online = devices.filter(d => d.status === 'online').length;
+      const offline = devices.filter(d => d.status !== 'online').length;
+
+      document.getElementById('onlineCount').textContent = online;
+      document.getElementById('offlineCount').textContent = offline;
+      document.getElementById('totalDevices').textContent = devices.length;
+
+      // Last sync time
+      const lastSynced = devices.filter(d => d.last_sync).sort((a, b) =>
+        new Date(b.last_sync) - new Date(a.last_sync)
+      )[0];
+      document.getElementById('lastSync').textContent = lastSynced ? formatTime(lastSynced.last_sync) : '-';
+    }
+
+    // Render table
+    function renderTable(data = devices) {
+      const tbody = document.getElementById('tableBody');
+
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">لا توجد أجهزة مسجلة</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(device => {
+        const isOnline = device.status === 'online' || device.status === 'active' || device.status === 'connected';
+
+        return `
+          <tr>
+            <td>
+              <div class="employee-cell">
+                <div class="employee-avatar" style="background: ${isOnline ? 'var(--success)' : 'var(--danger)'}">
+                  <i class="fa-solid fa-fingerprint" style="color:#fff;font-size:16px;"></i>
+                </div>
+                <span>${device.device_name}</span>
+              </div>
+            </td>
+            <td>${device.device_type === 'zkteco' ? 'ZKTeco' : 'FingerTec'}</td>
+            <td><code>${device.ip_address}</code></td>
+            <td>${device.port || 4370}</td>
+            <td>${device.location || '-'}</td>
+            <td><span class="status-badge ${isOnline ? 'active' : 'inactive'}">${isOnline ? 'متصل' : 'غير متصل'}</span></td>
+            <td>${device.last_sync ? formatDate(device.last_sync) + ' ' + formatTime(device.last_sync) : '-'}</td>
+            <td>
+              <div class="action-btns">
+                <button class="btn-icon" style="color: var(--info)" onclick="syncDevice('${device.id}')" title="مزامنة"><i class="fa-solid fa-rotate"></i></button>
+                <button class="btn-icon" style="color: var(--success)" onclick="testConnection('${device.id}')" title="اختبار الاتصال"><i class="fa-solid fa-plug"></i></button>
+                <button class="btn-icon edit" onclick="editDevice('${device.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-icon delete" onclick="deleteDevice('${device.id}')"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Sync single device
+    async function syncDevice(id) {
+      showNotification('جاري المزامنة...', 'success');
+      try {
+        await api.create(`devices/${id}/sync`, {});
+        showNotification('تمت المزامنة بنجاح');
+        loadData();
+      } catch (error) {
+        showNotification('فشل في المزامنة: ' + error.message, 'error');
+      }
+    }
+
+    // Sync all devices
+    async function syncAllDevices() {
+      showNotification('جاري مزامنة جميع الأجهزة...', 'success');
+      try {
+        await api.create('devices/sync-all', {});
+        showNotification('تمت مزامنة جميع الأجهزة');
+        loadData();
+      } catch (error) {
+        showNotification('فشل في المزامنة: ' + error.message, 'error');
+      }
+    }
+
+    // Test connection from List
+    async function testConnection(id) {
+      showNotification('جاري اختبار الاتصال...', 'info');
+      try {
+        const result = await api.create(`devices/${id}/test`, {});
+        if (result.status === 'connected') {
+          showNotification('الجهاز متصل بنجاح: ' + result.message);
+        } else {
+          showNotification('فشل الاتصال: ' + result.message, 'error');
+        }
+        loadData(); // Refresh status
+      } catch (error) {
+        showNotification('فشل الاتصال: ' + error.message, 'error');
+      }
+    }
+
+    // Test connection from Modal
+    async function testConnectionModal() {
+      const ip = document.getElementById('ipAddress').value;
+      const port = document.getElementById('port').value;
+      const key = document.getElementById('commKey').value;
+
+      if (!ip) {
+        showNotification('يرجى إدخال عنوان IP', 'warning');
+        return;
+      }
+
+      const btn = document.querySelector('button[onclick="testConnectionModal()"]');
+      const oldIcon = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      btn.disabled = true;
+
+      try {
+        const res = await api.create('devices/test-connection', {
+          ip_address: ip,
+          port: parseInt(port),
+          comm_key: key
+        });
+
+        if (res.success && res.device_info) {
+          showNotification('تم الاتصال! تم جلب البيانات', 'success');
+          document.getElementById('serialNumber').value = res.device_info.serial_number;
+          // document.getElementById('deviceType').value = ... infer if possible
+        } else {
+          showNotification('فشل الاتصال: ' + res.message, 'error');
+        }
+      } catch (e) {
+        showNotification('خطأ: ' + e.message, 'error');
+      } finally {
+        btn.innerHTML = oldIcon;
+        btn.disabled = false;
+      }
+    }
+
+    // Search & Filter
+    function handleSearch() {
+      handleFilter();
+    }
+
+    function handleFilter() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const type = document.getElementById('typeFilter').value;
+      const status = document.getElementById('statusFilter').value;
+
+      let filtered = devices;
+
+      if (query) {
+        filtered = filtered.filter(d =>
+          d.device_name?.toLowerCase().includes(query) ||
+          d.ip_address?.includes(query) ||
+          d.location?.toLowerCase().includes(query)
+        );
+      }
+
+      if (type) {
+        filtered = filtered.filter(d => d.device_type === type);
+      }
+
+      if (status) {
+        filtered = filtered.filter(d => d.status === status);
+      }
+
+      renderTable(filtered);
+    }
+
+    // Open add modal
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = 'إضافة جهاز جديد';
+      document.getElementById('deviceId').value = '';
+      document.getElementById('name').value = '';
+      document.getElementById('deviceType').value = 'zkteco';
+      document.getElementById('ipAddress').value = '';
+      document.getElementById('port').value = '4370';
+      document.getElementById('commKey').value = '0';
+      document.getElementById('serialNumber').value = '';
+      document.getElementById('location').value = '';
+      document.getElementById('notes').value = '';
+      document.getElementById('deviceTimezone').value = 'Asia/Baghdad';
+      document.getElementById('syncInterval').value = '5';
+      document.getElementById('retryCount').value = '3';
+      document.getElementById('deviceEnabled').checked = true;
+      openModal('deviceModal');
+    }
+
+    // Edit
+    async function editDevice(id) {
+      // Find device in local array
+      const device = devices.find(d => d.id === id);
+      if (!device) return;
+
+      openModal('deviceModal');
+
+      document.getElementById('modalTitle').textContent = 'تعديل الجهاز';
+      const deviceIdInput = document.getElementById('deviceId');
+      deviceIdInput.value = device.id;
+
+      document.getElementById('name').value = device.device_name || '';
+      document.getElementById('deviceType').value = device.device_type || 'zkteco';
+      document.getElementById('ipAddress').value = device.ip_address || '';
+      document.getElementById('port').value = device.port || '4370';
+      // Fill Comm Key
+      document.getElementById('commKey').value = device.comm_key || '0';
+
+      // Fill other fields
+      document.getElementById('serialNumber').value = device.serial_number || '';
+      document.getElementById('location').value = device.location || '';
+      document.getElementById('notes').value = device.notes || '';
+
+      // Default Settings
+      document.getElementById('deviceTimezone').value = 'Asia/Baghdad';
+      document.getElementById('syncInterval').value = '5';
+      document.getElementById('retryCount').value = '3';
+      document.getElementById('deviceEnabled').checked = true;
+
+      // Try filter or use mock settings logic if needed
+      // (Simplified for now as backend mock is used)
+    }
+
+    // Submit
+    async function handleSubmit(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('deviceId').value;
+      const data = {
+        device_name: document.getElementById('name').value,
+        device_type: document.getElementById('deviceType').value,
+        ip_address: document.getElementById('ipAddress').value,
+        port: parseInt(document.getElementById('port').value) || 4370,
+        serial_number: document.getElementById('serialNumber').value,
+        comm_key: document.getElementById('commKey').value || '0',
+        location: document.getElementById('location').value,
+        notes: document.getElementById('notes').value,
+        status: 'offline',
+        company_id: '00000000-0000-0000-0000-000000000001',
+        settings: {
+          timezone: document.getElementById('deviceTimezone').value || 'Asia/Baghdad',
+          sync_interval_minutes: parseInt(document.getElementById('syncInterval').value) || 5,
+          retry_count: parseInt(document.getElementById('retryCount').value) || 3,
+          is_enabled: document.getElementById('deviceEnabled').checked
+        }
+      };
+
+      try {
+        if (id) {
+          await api.update('devices', id, data);
+          showNotification('تم تحديث الجهاز بنجاح');
+        } else {
+          await api.create('devices', data);
+          showNotification('تم إضافة الجهاز بنجاح');
+        }
+        closeModal('deviceModal');
+        loadData();
+      } catch (error) {
+        showNotification('حدث خطأ: ' + error.message, 'error');
+      }
+    }
+
+    // Delete
+    async function deleteDevice(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا الجهاز؟')) return;
+
+      try {
+        await api.delete('devices', id);
+        showNotification('تم حذف الجهاز بنجاح');
+        loadData();
+      } catch (error) {
+        showNotification('حدث خطأ: ' + error.message, 'error');
+      }
+    }
+
+    // Init
+    // checkAuth();
+    loadData();
+  </script>
+</body>
+
+</html>

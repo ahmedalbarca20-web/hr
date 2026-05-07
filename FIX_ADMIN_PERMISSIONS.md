@@ -17,7 +17,7 @@
 
 ### 2️⃣ بيانات المستخدمين الإدارية تم إضافتها
 - ملف: `supabase/seed.sql`
-- Super Admin: superadmin@hr-demo.local (و opsadmin@hr-demo.local) — انظر DEMO_CREDENTIALS.md
+- Super Admin: admin@demo.com
 - HR Managers من كل شركة
 - Admin لكل شركة
 
@@ -40,13 +40,13 @@
 2. اختر: Authentication > Users
 3. اضغط: Create new user
 
-المستخدم الأول (Super Admin):
-- Email: superadmin@hr-demo.local
-- Password: انظر DEMO_CREDENTIALS.md
+المستخدم الأول:
+- Email: admin@demo.com
+- Password: Demo@123456
 
-المستخدمان الآخران (HR):
-- Email: hr.rafideen@hr-demo.local
-- Email: hr.alnoor@hr-demo.local
+المستخدمان الآخران:
+- Email: ahmad@rafideen.com
+- Email: yousif@alnoor.com
 ```
 
 ### الخطوة 2: الحصول على User IDs
@@ -56,10 +56,10 @@
 
 SELECT id, email FROM auth.users 
 WHERE email IN (
-  'superadmin@hr-demo.local',
-  'hr.rafideen@hr-demo.local', 
-  'hr.alnoor@hr-demo.local',
-  'admin.consult@hr-demo.local'
+  'admin@demo.com',
+  'ahmad@rafideen.com', 
+  'yousif@alnoor.com',
+  'raya@consultancy.com'
 );
 
 3. انسخ الـ UUID لكل مستخدم
@@ -131,16 +131,16 @@ SELECT COUNT(*) as total FROM payroll;
 
 ### 1. تسجيل الدخول كـ Super Admin
 ```
-Email: superadmin@hr-demo.local
-Password: (من DEMO_CREDENTIALS.md)
+Email: admin@demo.com
+Password: Demo@123456
 
 يجب أن يعيد التوجيه إلى: admin.html
 ```
 
 ### 2. تسجيل الدخول كـ HR Manager
 ```
-Email: hr.rafideen@hr-demo.local
-Password: (من DEMO_CREDENTIALS.md)
+Email: ahmad@rafideen.com
+Password: Demo@123456
 
 يجب أن يعيد التوجيه إلى: dashboard.html
 وأن يرى الميزات الإدارية (عرض إداري متقدم)
@@ -171,7 +171,7 @@ Password: (من DEMO_CREDENTIALS.md)
 ### المشكلة: تسجيل دخول فاشل
 **الحل:**
 1. تحقق من وجود المستخدم في Supabase Auth
-2. تأكد من كلمة المرور كما في DEMO_CREDENTIALS.md
+2. تأكد من كلمة المرور صحيحة (Demo@123456)
 3. افحص console للأخطاء
 
 ### المشكلة: الجداول فارغة

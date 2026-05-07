@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام التوظيف - HR Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .job-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+            border-right: 4px solid #3b82f6;
+        }
+
+        .job-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .job-card.closed {
+            border-right-color: #cbd5e1;
+            opacity: 0.8;
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .job-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #1e293b;
+        }
+
+        .job-meta {
+            color: #64748b;
+            font-size: 13px;
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .job-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .candidate-list {
+            margin-top: 15px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 15px;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .candidate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .candidate-info h4 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .candidate-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .rating-stars {
+            color: #f59e0b;
+            font-size: 12px;
+        }
+
+        .status-badge.new {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.interviewing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.hired {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .toggle-candidates-btn {
+            background: none;
+            border: none;
+            color: #6366f1;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-right">
+                <h1>التوظيف والكوادر</h1>
+                <p>إدارة الشواغر الوظيفية والمتقدمين</p>
+            </div>
+            <button class="btn btn-primary" onclick="openJobModal()">
+                <span><i class="fa-solid fa-plus"></i></span> نشر وظيفة جديدة
+            </button>
+        </header>
+
+        <div class="filters-bar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="keywords" placeholder="البحث في الوظائف..." oninput="loadJobs()">
+            </div>
+            <select class="filter-select" id="deptFilter" onchange="loadJobs()">
+                <option value="">جميع الأقسام</option>
+            </select>
+        </div>
+
+        <!-- Jobs Container -->
+        <div id="jobsContainer">
+            <div class="empty-state">
+                <div class="spinner"></div>
+                <p>جاري تحميل البيانات...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Job Modal -->
+    <div class="modal-overlay" id="jobModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">إضافة وظيفة جديدة</h2>
+                <button class="modal-close" onclick="closeModal('jobModal')">✕</button>
+            </div>
+            <form onsubmit="handleJobSubmit(event)">
+                <input type="hidden" id="jobId">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>المسمى الوظيفي</label>
+                        <input type="text" id="jobTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>القسم</label>
+                        <select id="jobDept">
+                            <option value="">اختر القسم</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>نوع التوظيف</label>
+                        <select id="jobType">
+                            <option value="full_time">دوام كامل</option>
+                            <option value="part_time">دوام جزئي</option>
+                            <option value="contract">عقد مؤقت</option>
+                            <option value="remote">عمل عن بعد</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>الراتب المتوقع (من)</label>
+                        <input type="number" id="salaryMin">
+                    </div>
+                    <div class="form-group">
+                        <label>الراتب المتوقع (إلى)</label>
+                        <input type="number" id="salaryMax">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>الوصف الوظيفي</label>
+                        <textarea id="jobDesc" rows="3"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>المتطلبات</label>
+                        <textarea id="jobReq" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('jobModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ ونشر</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Candidate Modal -->
+    <div class="modal-overlay" id="candidateModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>إضافة مرشح للوظيفة</h2>
+                <button class="modal-close" onclick="closeModal('candidateModal')">✕</button>
+            </div>
+            <form onsubmit="handleCandidateSubmit(event)">
+                <input type="hidden" id="candidateJobId">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>الاسم الكامل</label>
+                        <input type="text" id="candName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" id="candEmail">
+                    </div>
+                    <div class="form-group">
+                        <label>رقم الهاتف</label>
+                        <input type="text" id="candPhone">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>رابط السيرة الذاتية (CV Link)</label>
+                        <input type="url" id="candResume" placeholder="https://...">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>ملاحظات أولية</label>
+                        <textarea id="candNotes"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="closeModal('candidateModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إضافة المرشح</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script>
+        let currentCompanyId = '00000000-0000-0000-0000-000000000001';
+        let jobs = [];
+        let departments = [];
+
+        async function init() {
+            try {
+                const depts = await api.getAll('departments');
+                departments = depts || [];
+
+                // Populate select
+                const deptSelect = document.getElementById('deptFilter');
+                const modalSelect = document.getElementById('jobDept');
+                departments.forEach(d => {
+                    deptSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+                    modalSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+                });
+
+                loadJobs();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadJobs() {
+            const container = document.getElementById('jobsContainer');
+            container.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>جاري التحميل...</p></div>';
+
+            try {
+                // Load Jobs
+                const searchQuery = document.getElementById('keywords').value.toLowerCase();
+                const deptFilter = document.getElementById('deptFilter').value;
+
+                const jobsData = await api.fetchData(`/jobs?company_id=${currentCompanyId}`);
+                jobs = jobsData || [];
+
+                // Filter
+                const filtered = jobs.filter(job => {
+                    const matchSearch = job.title.toLowerCase().includes(searchQuery);
+                    const matchDept = !deptFilter || job.department_id === deptFilter;
+                    return matchSearch && matchDept;
+                });
+
+                renderJobs(filtered);
+            } catch (e) {
+                container.innerHTML = `<div class="empty-state"><p style="color:red">فشل تحميل البيانات. تأكد من تشغيل السكربت UPGRADE_V2_FEATURES.sql</p></div>`;
+                console.error(e);
+            }
+        }
+
+        async function renderJobs(jobsList) {
+            const container = document.getElementById('jobsContainer');
+
+            if (jobsList.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>لا توجد وظائف متاحة حالياً</p></div>';
+                return;
+            }
+
+            // Fetch candidates for all jobs (could be optimized)
+            const renderPromises = jobsList.map(async (job) => {
+                let candidatesHtml = '';
+                try {
+                    const candidates = await api.fetchData(`/candidates?job_id=${job.id}`);
+                    candidatesHtml = renderCandidates(candidates);
+                } catch (e) { }
+
+                return `
+                <div class="job-card ${job.status === 'closed' ? 'closed' : ''}">
+                    <div class="job-header">
+                        <div>
+                            <div class="job-title">${job.title} <span style="font-size:12px; font-weight:normal; background:#f1f5f9; padding:2px 8px; border-radius:4px;">${getJobType(job.type)}</span></div>
+                            <div class="job-meta">
+                                <span><i class="fa-solid fa-building"></i> ${getDeptName(job.department_id)}</span>
+                                <span><i class="fa-solid fa-money-bill-wave"></i> ${job.salary_range_min || 0} - ${job.salary_range_max || 0} ر.س</span>
+                                <span><i class="fa-solid fa-clock"></i> ${new Date(job.created_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        <div class="action-btns">
+                           <button class="btn btn-primary btn-sm" onclick="openCandidateModal('${job.id}')"><i class="fa-solid fa-plus"></i> مرشح</button>
+                           <button class="btn btn-secondary btn-sm" onclick="deleteJob('${job.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    
+                    <button class="toggle-candidates-btn" onclick="toggleCandidates('${job.id}')">
+                        <i class="fa-solid fa-users"></i> عرض المتقدمين
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+
+                    <div id="candidates-${job.id}" class="candidate-list">
+                        ${candidatesHtml || '<p style="font-size:12px; color:#999; text-align:center;">لا يوجد متقدمين حتى الآن</p>'}
+                    </div>
+                </div>
+            `;
+            });
+
+            const htmlParts = await Promise.all(renderPromises);
+            container.innerHTML = htmlParts.join('');
+        }
+
+        function renderCandidates(candidates) {
+            if (!candidates || candidates.length === 0) return '';
+
+            return candidates.map(c => `
+            <div class="candidate-item" style="${c.status === 'hired' ? 'border-right: 3px solid #10b981;' : ''}">
+                <div class="candidate-info">
+                    <h4>${c.full_name} ${c.status === 'hired' ? '<span class="status-badge hired" style="font-size:10px;">تم التعيين</span>' : ''}</h4>
+                    <p>${c.email} | ${c.phone || '-'}</p>
+                    ${c.resume_url ? `<a href="${c.resume_url}" target="_blank" style="font-size:11px; color:#2563eb;">عرض السيرة الذاتية</a>` : ''}
+                </div>
+                <div style="display:flex; gap:5px;">
+                    ${c.status !== 'hired' ? `
+                    <button class="btn btn-sm btn-info" onclick="hireCandidate('${c.id}', '${currentCompanyId}')" title="تعيين كموظف">
+                        <i class="fa-solid fa-check"></i> تعيين
+                    </button>` : ''}
+                    <button class="btn-icon delete" onclick="deleteCandidate('${c.id}')"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+        }
+
+        // --- Helpers ---
+        function getJobType(type) {
+            const types = { 'full_time': 'دوام كامل', 'part_time': 'دوام جزئي', 'contract': 'عقد', 'remote': 'عن بعد' };
+            return types[type] || type;
+        }
+
+        function getDeptName(id) {
+            const d = departments.find(x => x.id === id);
+            return d ? d.name : 'عام';
+        }
+
+        function toggleCandidates(jobId) {
+            const el = document.getElementById(`candidates-${jobId}`);
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // --- Modals ---
+        function openJobModal() {
+            document.getElementById('jobId').value = '';
+            openModal('jobModal');
+        }
+
+        function openCandidateModal(jobId) {
+            document.getElementById('candidateJobId').value = jobId;
+            openModal('candidateModal');
+        }
+
+        // --- Actions ---
+        async function handleJobSubmit(e) {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('jobTitle').value,
+                company_id: currentCompanyId,
+                department_id: document.getElementById('jobDept').value || null,
+                type: document.getElementById('jobType').value,
+                salary_range_min: document.getElementById('salaryMin').value || 0,
+                salary_range_max: document.getElementById('salaryMax').value || 0,
+                description: document.getElementById('jobDesc').value,
+                requirements: document.getElementById('jobReq').value,
+                status: 'open'
+            };
+
+            try {
+                await api.create('jobs', data);
+                closeModal('jobModal');
+                loadJobs();
+                showNotification('تم نشر الوظيفة بنجاح');
+            } catch (e) {
+                showNotification('حدث خطأ: ' + e.message, 'error');
+            }
+        }
+
+        async function deleteJob(id) {
+            if (!confirm('حذف الوظيفة سيحذف جميع المتقدمين لها. هل أنت متأكد؟')) return;
+            try {
+                await api.delete('jobs', id);
+                loadJobs();
+                showNotification('تم الحذف بنجاح');
+            } catch (e) { showNotification('حدث خطأ', 'error'); }
+        }
+
+        async function handleCandidateSubmit(e) {
+            e.preventDefault();
+            const data = {
+                job_id: document.getElementById('candidateJobId').value,
+                full_name: document.getElementById('candName').value,
+                email: document.getElementById('candEmail').value,
+                phone: document.getElementById('candPhone').value,
+                resume_url: document.getElementById('candResume').value,
+                notes: document.getElementById('candNotes').value,
+                status: 'new'
+            };
+
+            try {
+                await api.create('candidates', data);
+                closeModal('candidateModal');
+                loadJobs(); // Reload to refresh count
+                showNotification('تم إضافة المرشح بنجاح');
+            } catch (e) {
+                showNotification('حدث خطأ', 'error');
+            }
+        }
+
+        async function deleteCandidate(id) {
+            if (!confirm('حذف هذا المرشح؟')) return;
+            try {
+                await api.delete('candidates', id);
+                loadJobs();
+                showNotification('تم حذف المرشح');
+            } catch (e) { showNotification('حدث خطأ', 'error'); }
+        }
+
+        async function hireCandidate(id, companyId) {
+            if (!confirm('سيتم إنشاء حساب موظف جديد لهذا المرشح وإغلاق ملف التوظيف له. متابعة؟')) return;
+            try {
+                // Call the specific Hire endpoint
+                await api.fetchData(`/candidates/${id}/hire`, 'POST', { company_id: companyId });
+                loadJobs();
+                showNotification('مبروك! تم تعيين الموظف بنجاح', 'success');
+            } catch (e) {
+                showNotification('فشل التعيين: ' + e.message, 'error');
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

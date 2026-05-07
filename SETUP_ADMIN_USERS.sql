@@ -1,6 +1,5 @@
 -- ⚠️ SETUP INSTRUCTIONS FOR ADMIN USERS
 -- اتبع هذه الخطوات لإنشاء مستخدمين إداريين مع صلاحيات صحيحة
--- كلمات المرور الموحدة: راجع DEMO_CREDENTIALS.md
 
 -- ====================================
 -- 1️⃣ إنشاء المستخدمين في Supabase Auth
@@ -16,29 +15,32 @@
 /*
 USER 1 - Super Admin (System)
 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-Email: superadmin@hr-demo.local
-Password: LocalHr#2026!Alpha
+Email: admin@demo.com
+Password: Demo@123456
 
-USER 2 - Super Admin (Operations)
+USER 2 - Super Admin (Primary)
 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-Email: opsadmin@hr-demo.local
-Password: LocalHr#2026!Bravo
+Email: ahmedalbarca20@gmail.com
+Password: @Ahmed11889955
 Disable Confirm Email: تفعيل (اختياري)
 
-USER 3 - HR Manager (Rafideen)
+USER 2 - HR Manager (Rafideen)
 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-Email: hr.rafideen@hr-demo.local
-Password: LocalHr#2026!Delta
+Email: ahmad@rafideen.com
+Password: Demo@123456
+Confirm Password: Demo@123456
 
-USER 4 - HR Manager (Al-Noor)
+USER 3 - HR Manager (Al-Noor)
 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-Email: hr.alnoor@hr-demo.local
-Password: LocalHr#2026!Echo
+Email: yousif@alnoor.com
+Password: Demo@123456
+Confirm Password: Demo@123456
 
-USER 5 - Admin (Consultancy)
+USER 4 - Admin (Consultancy)
 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-Email: admin.consult@hr-demo.local
-Password: LocalHr#2026!Foxtrot
+Email: raya@consultancy.com
+Password: Demo@123456
+Confirm Password: Demo@123456
 */
 
 -- ====================================
@@ -50,20 +52,20 @@ Password: LocalHr#2026!Foxtrot
 -- 2. شغل هذا الأمر للحصول على User IDs:
 
 SELECT id, email FROM auth.users WHERE email IN (
-  'superadmin@hr-demo.local',
-  'hr.rafideen@hr-demo.local', 
-  'hr.alnoor@hr-demo.local',
-  'admin.consult@hr-demo.local'
+  'admin@demo.com',
+  'ahmad@rafideen.com', 
+  'yousif@alnoor.com',
+  'raya@consultancy.com'
 ) ORDER BY email;
 
 -- سيظهر شيء مثل:
 /*
 id (UUID) | email
 ---------------------
-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | admin.consult@hr-demo.local
-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | hr.alnoor@hr-demo.local
-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | hr.rafideen@hr-demo.local
-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | superadmin@hr-demo.local
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | admin@demo.com
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | ahmad@rafideen.com
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | raya@consultancy.com
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | yousif@alnoor.com
 */
 
 -- ====================================
@@ -73,9 +75,9 @@ xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | superadmin@hr-demo.local
 -- استبدل قيم UUIDs المزيفة بالقيم الفعلية من الخطوة السابقة في seed.sql:
 -- 
 -- '00000000-0000-0000-0000-100000000001' ← استبدل مع Super Admin UUID
--- '00000000-0000-0000-0000-100000000002' ← استبدل مع hr.rafideen UUID
--- '00000000-0000-0000-0000-100000000003' ← استبدل مع hr.alnoor UUID
--- '00000000-0000-0000-0000-100000000004' ← استبدل مع admin.consult UUID
+-- '00000000-0000-0000-0000-100000000002' ← استبدل مع ahmad UUID
+-- '00000000-0000-0000-0000-100000000003' ← استبدل مع yousif UUID
+-- '00000000-0000-0000-0000-100000000004' ← استبدل مع raya UUID
 
 -- ====================================
 -- 4️⃣ تشغيل Seed Data
@@ -103,14 +105,14 @@ FROM user_profiles up
 LEFT JOIN companies c ON up.company_id = c.id
 ORDER BY up.role DESC, up.email;
 
--- النتيجة المتوقعة (مثال):
+-- النتيجة المتوقعة:
 /*
 email | full_name | role | company
 ---------|------------|----------|-------------------
-superadmin@hr-demo.local | مدير النظام الرئيسي | super_admin | (null)
-hr.rafideen@hr-demo.local | أحمد محمود | hr_manager | شركة الرافدين للتكنولوجيا
-hr.alnoor@hr-demo.local | يوسف محمد (مدير) | hr_manager | مصنع النور الصناعي
-admin.consult@hr-demo.local | ريا محمود (مديرة) | admin | استشارات العراق المتقدمة
+admin@demo.com | مدير النظام الرئيسي | super_admin | (null)
+ahmad@rafideen.com | أحمد محمود | hr_manager | شركة الرافدين للتكنولوجيا
+yousif@alnoor.com | يوسف محمد (مدير) | hr_manager | مصنع النور الصناعي
+raya@consultancy.com | ريا محمود (مديرة) | admin | استشارات العراق المتقدمة
 */
 
 -- ====================================

@@ -1,27 +1,13 @@
 # 🔐 بيانات الدخول والبيانات الافتراضية
 
-> **تنبيه:** البريد `hr-demo.local` للتجربة المحلية فقط. أنشئ المستخدمين بنفس البريد وكلمة المرور في **Supabase Auth** ثم اربطهم بـ `user_profiles`.
+## 📧 بيانات الدخول للادمن الرئيسي
 
-### تطوير بدون اتصال بـ Supabase
-إذا ظهر خطأ مثل `fetch failed` عند تسجيل الدخول (DNS/شبكة)، فعّل في `.env`: `AUTH_DEV_BYPASS=true` و`AUTH_DEV_EMAIL` / `AUTH_DEV_PASSWORD` مع **وضع كلمة المرور بين علامتي اقتباس** إذا تحتوي على `#` (مثال: `AUTH_DEV_PASSWORD="LocalHr#2026!Alpha"`). أعد تشغيل الخادم بعد تعديل `.env`.
+**البريد الإلكتروني:** `admin@demo.com`  
+**كلمة المرور:** `Demo@123456`  
 
-### مفتاح التحقق من JWT
-`SUPABASE_JWT_SECRET` يجب أن يكون **JWT Secret** من لوحة Supabase (Settings → API)، وليس نفس `SUPABASE_SERVICE_ROLE_KEY`.
-
-## 📧 بيانات الدخول للمسؤولين الأعلى (Super Admin)
-
-| البريد | كلمة المرور | الدور |
-|--------|-------------|--------|
-| `superadmin@hr-demo.local` | `LocalHr#2026!Alpha` | Super Admin |
-| `opsadmin@hr-demo.local` | `LocalHr#2026!Bravo` | Super Admin |
-
-## 📧 مستخدمون إداريون آخرون (بعد إنشائهم في Auth)
-
-| البريد | كلمة المرور | الدور |
-|--------|-------------|--------|
-| `hr.rafideen@hr-demo.local` | `LocalHr#2026!Delta` | HR Manager |
-| `hr.alnoor@hr-demo.local` | `LocalHr#2026!Echo` | HR Manager |
-| `admin.consult@hr-demo.local` | `LocalHr#2026!Foxtrot` | Admin (شركة) |
+**البريد الإلكتروني:** `ahmedalbarca20@gmail.com`  
+**كلمة المرور:** `@Ahmed11889955`  
+**الدور:** Super Admin  
 
 ---
 
@@ -72,12 +58,16 @@
 ## 🔧 كيفية استخدام البيانات
 
 ### 1. تحميل البيانات الافتراضية
-في **Supabase → SQL Editor** نفّذ **`supabase/seed.sql`** بعد **`schema.sql`** (والـ migrations عند الحاجة). الملف يعبئ الشركات الثلاث والـ **14 موظفاً** والحضور (12 أسبوعاً) والرواتب (3 أشهر) والمهام والوظائف والمرشحين والأصول والوثائق وغيرها، ويمكن إعادة تشغيله بأمان لنفس معرفات الشركات. استخدم **`seed_restore.sql`** فقط كمرجع قديم.
+```sql
+-- في Supabase Dashboard > SQL Editor
+-- اتبع التعليقات في supabase/seed.sql
+```
 
 ### 2. الوصول للنظام
-1. أنشئ المستخدمين في Supabase Authentication بنفس البريد وكلمة المرور أعلاه
-2. اذهب إلى صفحة تسجيل الدخول
-3. سجّل الدخول بحساب Super Admin أو حسب الدور
+1. اذهب إلى صفحة تسجيل الدخول
+2. أدخل البريد: `admin@demo.com`
+3. أدخل كلمة المرور: `Demo@123456`
+4. اختر "Super Admin" كدور
 
 ### 3. المميزات المتاحة
 - 📊 لوحة التحكم الرئيسية
@@ -108,5 +98,5 @@
 
 ---
 
-**تاريخ التحديث:** مايو 2026  
-**الإصدار:** 1.1
+**تاريخ الإنشاء:** 14 فبراير 2026  
+**الإصدار:** 1.0

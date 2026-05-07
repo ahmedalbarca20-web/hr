@@ -1,21 +1,13 @@
 ========================================
-🔐 LOGIN CREDENTIALS (LOCAL DEMO ONLY)
+🔐 LOGIN CREDENTIALS FOR ADMIN
 ========================================
-أنشئ نفس المستخدمين في Supabase Auth قبل التجربة.
-التفاصيل الكاملة: DEMO_CREDENTIALS.md
 
-Super Admin:
-📧 superadmin@hr-demo.local
-🔑 LocalHr#2026!Alpha
+📧 Email: admin@demo.com
+🔑 Password: Demo@123456
 
-Super Admin (ثانٍ):
-📧 opsadmin@hr-demo.local
-🔑 LocalHr#2026!Bravo
-
-HR / Admin (بعد الإعداد في Auth):
-📧 hr.rafideen@hr-demo.local — LocalHr#2026!Delta
-📧 hr.alnoor@hr-demo.local — LocalHr#2026!Echo
-📧 admin.consult@hr-demo.local — LocalHr#2026!Foxtrot
+📧 Email: ahmedalbarca20@gmail.com
+🔑 Password: @Ahmed11889955
+👤 Role: Super Admin
 
 ========================================
 🏢 DEMO COMPANIES (3)
@@ -49,7 +41,7 @@ HR / Admin (بعد الإعداد في Auth):
 ========================================
 
 1. اذهب إلى login.html
-2. أنشئ المستخدم في Supabase ثم سجّل الدخول
+2. أدخل البيانات أعلاه
 3. اختبر جميع المميزات الإدارية
 4. شاهد Pulse Chart والتقارير المتقدمة
 

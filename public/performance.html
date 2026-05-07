@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقييم الأداء والذكاء الاصطناعي - HR Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .review-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .review-score {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            font-weight: bold;
+            font-size: 18px;
+            border: 4px solid #e2e8f0;
+        }
+
+        .score-high {
+            border-color: #10b981;
+            color: #059669;
+        }
+
+        .score-med {
+            border-color: #f59e0b;
+            color: #d97706;
+        }
+
+        .score-low {
+            border-color: #ef4444;
+            color: #dc2626;
+        }
+
+        .ai-badge {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .review-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            font-size: 13px;
+        }
+
+        .detail-box h4 {
+            margin: 0 0 5px 0;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .detail-box p {
+            margin: 0;
+            color: #334155;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-right">
+                <h1>تقييم الأداء (AI Powered)</h1>
+                <p>متابعة وتطوير أداء الموظفين</p>
+            </div>
+            <button class="btn btn-primary" onclick="openReviewModal()">
+                <span><i class="fa-solid fa-plus"></i></span> تقييم جديد
+            </button>
+        </header>
+
+        <div class="filters-bar">
+            <select class="filter-select" id="employeeFilter" onchange="loadReviews()">
+                <option value="">جميع الموظفين</option>
+            </select>
+        </div>
+
+        <div id="reviewsContainer">
+            <div class="empty-state">
+                <div class="spinner"></div>
+                <p>جاري تحميل التقييمات...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Review Modal -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal" style="width: 600px;">
+            <div class="modal-header">
+                <h2 id="modalTitle">إضافة تقييم جديد</h2>
+                <button class="modal-close" onclick="closeModal('reviewModal')">✕</button>
+            </div>
+            <form onsubmit="handleSubmit(event)">
+                <input type="hidden" id="reviewId">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>الموظف</label>
+                        <select id="reviewEmployee" required>
+                            <option value="">اختر الموظف</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>الفترة (الرابعة / السنة)</label>
+                        <input type="text" id="reviewPeriod" placeholder="Q1 2024" required>
+                    </div>
+                    <div class="form-group">
+                        <label>الدرجة (0-100)</label>
+                        <input type="number" id="reviewScore" min="0" max="100" required>
+                    </div>
+
+                    <div class="form-group full-width"
+                        style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px dashed #16a34a;">
+                        <label style="color: #15803d; display: flex; align-items: center; gap: 5px;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> تحليل الذكاء الاصطناعي (تلقائي)
+                        </label>
+                        <p style="font-size: 11px; color: #166534; margin: 5px 0;">
+                            سيقوم النظام تلقائياً بتوليد نقاط القوة والضعف بناءً على الدرجة المدخلة إذا تركت الحقول
+                            فارغة.
+                        </p>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>نقاط القوة (Strengths)</label>
+                        <textarea id="reviewStrengths" placeholder="اتركه فارغاً للتوليد التلقائي..."></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>نقاط تحتاج تحسين (Weaknesses)</label>
+                        <textarea id="reviewWeaknesses" placeholder="اتركه فارغاً للتوليد التلقائي..."></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>الأهداف القادمة (Goals)</label>
+                        <textarea id="reviewGoals"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('reviewModal')">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ التقييم</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script>
+        let employees = [];
+        let reviews = [];
+
+        async function init() {
+            try {
+                // Load employees for filter
+                const emps = await api.getAll('employees');
+                employees = emps || [];
+
+                const select = document.getElementById('employeeFilter');
+                const modalSelect = document.getElementById('reviewEmployee');
+
+                employees.forEach(e => {
+                    select.innerHTML += `<option value="${e.id}">${e.full_name}</option>`;
+                    modalSelect.innerHTML += `<option value="${e.id}">${e.full_name}</option>`;
+                });
+
+                loadReviews();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadReviews() {
+            const container = document.getElementById('reviewsContainer');
+            container.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+
+            try {
+                const empId = document.getElementById('employeeFilter').value;
+                let url = '/performance';
+                if (empId) url += `?employee_id=${empId}`;
+
+                const data = await api.fetchData(url);
+                reviews = data || [];
+
+                renderReviews(reviews);
+            } catch (e) {
+                container.innerHTML = `<div class="empty-state" style="color:red"><p>فشل التحميل. هل قمت بتشغيل UPGRADE_V2_FEATURES.sql؟</p></div>`;
+            }
+        }
+
+        function renderReviews(list) {
+            const container = document.getElementById('reviewsContainer');
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>لا توجد تقييمات مسجلة</p></div>';
+                return;
+            }
+
+            container.innerHTML = list.map(r => {
+                const empName = r.employees ? r.employees.full_name : 'Unknown';
+                const scoreClass = r.score >= 80 ? 'score-high' : (r.score >= 50 ? 'score-med' : 'score-low');
+
+                return `
+                <div class="review-card">
+                    <div class="review-header">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div class="review-score ${scoreClass}">${r.score}</div>
+                            <div>
+                                <h3 style="margin: 0; font-size: 16px;">${empName}</h3>
+                                <div style="font-size: 12px; color: #666;">
+                                    <i class="fa-solid fa-calendar"></i> ${r.review_period}
+                                    ${r.is_ai_generated ? '<span class="ai-badge"><i class="fa-solid fa-robot"></i> AI Analysis</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-btns">
+                            <button class="btn-icon delete" onclick="deleteReview('${r.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="review-details">
+                        <div class="detail-box" style="background: #f0fdf4; padding: 10px; border-radius: 6px;">
+                            <h4><i class="fa-solid fa-thumbs-up"></i> نقاط القوة</h4>
+                            <p>${r.strengths || '-'}</p>
+                        </div>
+                        <div class="detail-box" style="background: #fef2f2; padding: 10px; border-radius: 6px;">
+                            <h4><i class="fa-solid fa-thumbs-down"></i> نقاط التحسين</h4>
+                            <p>${r.weaknesses || '-'}</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 13px; color: #475569;">
+                        <strong>الأهداف القادمة:</strong> ${r.goals || '-'}
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function openReviewModal() {
+            document.getElementById('reviewId').value = '';
+            document.getElementById('reviewStrengths').value = ''; // Clear for AI generation
+            document.getElementById('reviewWeaknesses').value = '';
+            openModal('reviewModal');
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const data = {
+                employee_id: document.getElementById('reviewEmployee').value,
+                review_period: document.getElementById('reviewPeriod').value,
+                score: parseInt(document.getElementById('reviewScore').value),
+                strengths: document.getElementById('reviewStrengths').value,
+                weaknesses: document.getElementById('reviewWeaknesses').value,
+                goals: document.getElementById('reviewGoals').value,
+                // reviewer_id: userId (TODO: Add auth user id)
+            };
+
+            try {
+                await api.create('performance', data);
+                closeModal('reviewModal');
+                loadReviews();
+                showNotification('تم حفظ التقييم بنجاح');
+            } catch (e) {
+                showNotification('حدث خطأ: ' + e.message, 'error');
+            }
+        }
+
+        async function deleteReview(id) {
+            if (!confirm('حذف هذا التقييم؟')) return;
+            try {
+                await api.delete('performance', id);
+                loadReviews();
+                showNotification('تم الحذف');
+            } catch (e) { showNotification('خطأ', 'error'); }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
