@@ -49,7 +49,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             serve_static_1.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', 'public'),
-                exclude: ['/api/{*path}'],
+                exclude: ['/api/*path'],
             }),
             schedule_1.ScheduleModule.forRoot(),
             database_module_1.DatabaseModule,

@@ -34,7 +34,7 @@ import { CandidatesModule } from './modules/candidates/candidates.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
-      exclude: ['/api/:path*'],
+      exclude: ['/api/*path'],
     }),
     ScheduleModule.forRoot(),
     DatabaseModule,
