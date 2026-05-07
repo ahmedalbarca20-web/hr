@@ -1,0 +1,1 @@
+{"version":3,"file":"payroll.dto.js","sourceRoot":"","sources":["../../../src/modules/payroll/payroll.dto.ts"],"names":[],"mappings":";;;AAAA,MAAa,gBAAgB;IAC3B,UAAU,CAAS;IACnB,WAAW,CAAS;IACpB,WAAW,CAAU;IACrB,UAAU,CAAU;IACpB,eAAe,CAAU;IACzB,UAAU,CAAU;IACpB,KAAK,CAAS;CACf;AARD,4CAQC;AAED,MAAa,gBAAgB;IAC3B,WAAW,CAAU;IACrB,UAAU,CAAU;IACpB,eAAe,CAAU;IACzB,UAAU,CAAU;CACrB;AALD,4CAKC"}
